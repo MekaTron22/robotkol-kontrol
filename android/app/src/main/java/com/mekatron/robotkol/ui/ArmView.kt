@@ -180,14 +180,18 @@ class ArmView @JvmOverloads constructor(ctx: Context, attrs: AttributeSet? = nul
         // sürüklenirken: etkin eklemin izinli aralığı ve referanslar
         active?.let { drawActiveGuides(c, it, pts, abs) }
 
-        // segmentler
+        // segmentler (üst kol: omuz → köşe → sağa çıkıntı → dirsek pivotu)
+        val corner = ArmKinematics.elbowCorner(shoulder, len)
         for (i in 0..2) {
-            val a = pts[i]; val b = pts[i + 1]
-            if (active?.ordinal == i) c.drawLine(sx(a), sy(a), sx(b), sy(b), segGlow)
+            path.reset()
+            path.moveTo(sx(pts[i]), sy(pts[i]))
+            if (i == 0) path.lineTo(sx(corner), sy(corner))
+            path.lineTo(sx(pts[i + 1]), sy(pts[i + 1]))
+            if (active?.ordinal == i) c.drawPath(path, segGlow)
             segPaint.color = if (active?.ordinal == i) RoverTheme.ACTIVE else RoverTheme.ORANGE
-            segPaint.strokeWidth = d(if (i == 2) 11f else 15f)
-            c.drawLine(sx(a), sy(a), sx(b), sy(b), segPaint)
-            c.drawLine(sx(a), sy(a), sx(b), sy(b), segHighlight)
+            segPaint.strokeWidth = d(if (i == 2) 10f else 13f)
+            c.drawPath(path, segPaint)
+            c.drawPath(path, segHighlight)
         }
         drawClaw(c, pts[3], abs[2])
 
@@ -250,10 +254,12 @@ class ArmView @JvmOverloads constructor(ctx: Context, attrs: AttributeSet? = nul
         // ekranda y aşağı: açı −θ
         c.drawArc(x - rr, y - rr, x + rr, y + rr, (-a1).toFloat(), (a1 - a0).toFloat(), false, rangePaint)
         if (seg == Segment.FORE) {
-            // üst kolun uzantısı = paralel konum (dirsek ≈ 180)
+            // üst kola paralel çizgi, dirsek pivotundan geçer: yukarı = düz devam (180),
+            // aşağı = katlanmış paralel (0) – çıkıntı sayesinde üst kolun yanında kalır
             val r = Math.toRadians(parent)
             val l = len.fore * scale()
-            c.drawLine(x, y, x + (l * cos(r)).toFloat(), y - (l * sin(r)).toFloat(), refPaint)
+            val dx = (l * cos(r)).toFloat(); val dy = (l * sin(r)).toFloat()
+            c.drawLine(x - dx, y + dy, x + dx, y - dy, refPaint)
         }
     }
 
@@ -362,7 +368,9 @@ class ArmView @JvmOverloads constructor(ctx: Context, attrs: AttributeSet? = nul
         val tip = pts[3]
         val handExtra = Point(tip.x + (tip.x - pts[2].x) * 0.5, tip.y + (tip.y - pts[2].y) * 0.5)
         val dists = doubleArrayOf(
-            ArmKinematics.distanceToSegment(p, pts[0], pts[1]),
+            ArmKinematics.elbowCorner(shoulder, len).let {
+                min(ArmKinematics.distanceToSegment(p, pts[0], it), ArmKinematics.distanceToSegment(p, it, pts[1]))
+            },
             ArmKinematics.distanceToSegment(p, pts[1], pts[2]),
             ArmKinematics.distanceToSegment(p, pts[2], handExtra),
         )

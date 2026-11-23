@@ -69,7 +69,7 @@ Sıra: Kök, Omuz (A1; A2 = 180 − A1), Dirsek, Bilek, Rotasyon, Kıskaç
 | Taşıma | 90, 120, 120, 60, 90, 105 |
 | Sola bak / Sağa bak | 150 / 30, 100, 150, 80, 90, 60 |
 
-Dirsek: 90 = ön kol üst kola ≈90° (sağa), 180 = üst kola paralel.
+Dirsek: pivot üst kolun ucundaki sağa çıkıntıda; 90 = ön kol üst kola ≈90° (sağa), 0 = aşağı katlanmış paralel (çarpışmasız), 180 = düz devam.
 Bunlar sahada test edilip düzeltilecek başlangıç değerleridir.
 
 ## İlk çalıştırma ve kalibrasyon kontrol listesi

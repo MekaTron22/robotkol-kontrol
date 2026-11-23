@@ -42,7 +42,7 @@ Teslim edilenler:
 | Slave Arduino Uno firmware'i (7 servo) | Tamamlandı, derleniyor |
 | Plan, pin tabloları, protokol belgesi | `docs/PLAN.md` |
 | Görsel bağlantı şeması (PNG + SVG) ve üretici betik | `docs/`, `tools/` |
-| Birim testleri + ekran görüntüsü testi | 16 test, hepsi geçiyor |
+| Birim testleri + ekran görüntüsü testi | 17 test, hepsi geçiyor |
 
 Kullanıcı gereksinimleri (sohbetten):
 
@@ -328,7 +328,7 @@ v1.1 ile arayüz modernleştirildi (aynı yerleşim mantığı, yeni görünüm)
 - Pivota 18 dp'den yakın dokunuşlar yok sayılır.
 - Sürüklenen segment açık sarıyla ve hâleyle vurgulanır; sağ üstte değer balonu çıkar.
 - Sürüklerken etkin eklemin **izinli dönüş aralığı** pivot etrafında yay olarak gösterilir; dirsekte ayrıca
-  **üst kolun uzantısı (paralel konum)** kesikli çizgiyle gösterilir.
+  dirsek pivotundan geçen **üst kola paralel çizgi** (yukarı = düz devam, aşağı = katlanmış paralel) kesikli gösterilir.
 - **Eklem paneli (sol):** OMUZ / DİRSEK / BİLEK değerleri; **−/+** dokun = 1°, basılı tut = sürekli (≈14°/s).
   Sınıra dayanınca titreşim. Dirsek satırında ön kolun üst kola göre açısı da yazar ("üst kola ∠90°").
 - Sınıra gelen eklem kırpılır, yanlış uca "atlamaz".
@@ -338,7 +338,7 @@ v1.1 ile arayüz modernleştirildi (aynı yerleşim mantığı, yeni görünüm)
 *Ekran testi: ön kol sürüklendi → yalnız dirsek değişti; omuz (100°) ve bilek (70°) aynı, el ön kolla birlikte döndü.
 Sarı yay dirseğin izinli aralığı, kesikli çizgi paralel konum.*
 
-| Kalibrasyon (hepsi 90°): ön kol üst kola dik, sağa | Dirsek 180°: ön kol üst kola paralel |
+| Kalibrasyon (hepsi 90°): sağa çıkıntı + ön kol üst kola dik | Dirsek 0°: ön kol aşağı katlanmış, üst kola paralel, çıkıntı sayesinde yanında |
 |---|---|
 | ![90](img/ekran_kalibrasyon_90.png) | ![paralel](img/ekran_dirsek_paralel.png) |
 
@@ -413,7 +413,7 @@ Sarı yay dirseğin izinli aralığı, kesikli çizgi paralel konum.*
 
 ## 9. Kol kinematiği ve açı kuralları
 
-Yandan görünüşte x = ileri, y = yukarı, omuz pivotu (0, 0). Segment boyları (görsel oran): üst kol 1.0, ön kol 0.9, el 0.45.
+Yandan görünüşte x = ileri, y = yukarı, omuz pivotu (0, 0). Segment boyları (görsel oran): üst kol 1.0, dirsek çıkıntısı 0.28 (sağa, üst kola dik), ön kol 0.9, el 0.45.
 
 ```
 φ1 (üst kol mutlak açısı) = omuz servo                 0 = ileri yatay, 90 = dik
@@ -421,15 +421,18 @@ Yandan görünüşte x = ileri, y = yukarı, omuz pivotu (0, 0). Segment boylar�
 φ3 (el mutlak açısı)      = φ2 + (bilek servo − 90)    bilek 90 = ön kolla düz devam
 ```
 
-**Dirsek montajı (v1.1):** Ön kol (dirsek–bilek), dirsek servosu ortadayken (90) üst kola **≈90°** açıyla ve
-**ileri/sağ** tarafa bakacak şekilde takılıdır: üst kol dik tutulduğunda ön kol sağa doğru çıkıntı yapar.
+**Dirsek çıkıntısı:** Üst kolun ucunda, kola dik ve **sağa (ileri)** doğru kısa bir çıkıntı vardır; dirsek pivotu
+bu çıkıntının ucundadır (`ArmKinematics.Lengths.elbowOffset`). Böylece ön kol aşağı katlanıp üst kola paralel
+geldiğinde üst kolun **yanından** geçer, iki kol birbirine çarpmaz.
+
+**Dirsek montajı (v1.1):** Dirsek servosu ortadayken (90) ön kol üst kola **≈90°** açıyla, **ileri/sağ** tarafa bakar.
 `MONTAJ = ArmKinematics.ELBOW_MOUNT_DEG = 90` (şimdilik kabul; gerçek ölçülen değer gelince yalnız bu sabit değişir).
 
 | Dirsek servo | Ön kolun üst kola göre durumu |
 |---|---|
-| 180 | **Paralel** – düz uzanmış (kol dümdüz) |
+| 180 | Yukarı, üst kolla düz devam (çıkıntı kadar sağda) |
 | 90 | **Dik (≈90°)**, sağa/ileri – mekanik standart konum |
-| 0 | Aşağı katlanmış (üst kolla çakışabilir; sahada alt sınır belirlenmeli) |
+| 0 | **Aşağı katlanmış, üst kola paralel** – çıkıntı sayesinde yanında, çarpışmaz |
 
 **Sürükleme:** Kullanıcı bir segmenti istenen mutlak açıya getirdiğinde yalnız o eklemin servo açısı hesaplanır:
 
@@ -491,7 +494,7 @@ Uygulamada **Duruşlar** penceresi:
 
 ## 12. Testler ve doğrulama
 
-### Android birim testleri — 16 test, hepsi geçiyor
+### Android birim testleri — 17 test, hepsi geçiyor
 
 `cd android && ./gradlew testDebugUnitTest`
 
@@ -504,7 +507,8 @@ Uygulamada **Duruşlar** penceresi:
 | | `rejectsCorruptedFrame` | Bozuk çerçeve atılıyor, sayaç artıyor |
 | | `parsesHello` | `OK,ROVER,1` yanıtı |
 | `KinematicsTest` | `elbowMountedPerpendicularToTheRightAt90` | Hepsi 90° → üst kol dik, ön kol sağa ≈90° |
-| | `elbowCanReachParallelToUpperArm` | Dirsek 180 → ön kol üst kola paralel; sürüklemeyle de ulaşılıyor |
+| | `elbowFoldsParallelBesideUpperArmWithoutCollision` | Dirsek 0 → ön kol üst kola paralel, çıkıntı kadar yanında (çarpışma yok) |
+| | `elbowCanGoStraightUp` | Dirsek 180 → düz devam; sürüklemeyle iki uca da ulaşılıyor |
 | | `childFollowsParentRotation` | Omuz dönünce alt segmentlerin göreli açısı sabit |
 | | `draggingOnlyChangesThatJoint` | Ön kol sürükleme yalnız dirseği hesaplıyor |
 | | `shoulderWrapsToNearestLimit` | Sınırda yanlış uca atlama yok |
@@ -535,7 +539,7 @@ Ekran görüntüleri `docs/img/` altındadır.
 
 ### Telefona kurulum
 1. `release/RobotKolRover-v1.1.apk` dosyasını telefona aktarın.
-   SHA-256: `7e9ef810d908948f6cce4aec43259d6f1bc0e23ca8fe69c90f15a78e384fe7c9`
+   SHA-256: `7866082fa99078067dbe48d66c85907414e884b4ad62f962621e7242715ec450`
 2. "Bilinmeyen kaynaklardan yükleme" iznini verin, kurun.
 3. Bluetooth ayarlarından HC-05'i eşleştirin.
 4. Uygulama → **Bağlan** → HC-05.
@@ -591,7 +595,7 @@ Android Studio ile `android/` klasörünü açmak da yeterlidir.
 | 6 | 3S pil 12.6 V | Uno VIN için sınırda, regülatör ısınır | İsteğe bağlı 7–9 V buck |
 | 7 | Far LED'leri | 4 LED'i doğrudan pinden sürmek pin akımını aşar | NPN transistör / MOSFET |
 | 8 | Pil izleme yok | Pil gerilimi ölçülmüyor | İleride bölücü + A0 ile eklenebilir |
-| 9 | Kinematik oranları görsel | Segment boyları gerçek kol ölçüleri değil | Gerçek ölçüler `ArmKinematics.Lengths`'e girilebilir |
+| 9 | Kinematik oranları görsel | Segment boyları ve dirsek çıkıntısı gerçek kol ölçüleri değil | Gerçek ölçüler `ArmKinematics.Lengths`'e girilebilir |
 | 10 | APK debug imzalı | Play Store'a uygun değil | Gerekirse sürüm anahtarı oluşturulur |
 | 11 | Yalnız Android | HC-05 klasik Bluetooth; iOS desteklemez | iOS için HM-10 (BLE) gerekir |
 
@@ -644,14 +648,14 @@ robotkol-kontrol/
 10. Görsel bağlantı şeması (PNG + SVG) ve üretici betik eklendi (commit `79c4cd2`).
 11. Bu ayrıntılı özet belgesi eklendi.
 12. v1.1: arayüz modernleştirildi (kartlar, eklem paneli + ince ayar, sürüklemede aralık yayı); dirsek montajı
-    ≈90° sağa olarak modellendi (`ELBOW_MOUNT_DEG`), dirsek 180 = paralel; ev duruşu dirseği 50 → 90 (slave ile birlikte),
+    ≈90° sağa olarak modellendi (`ELBOW_MOUNT_DEG`), dirsek noktasına sağa çıkıntı eklendi (dirsek 0 = katlanmış paralel, çarpışmasız); ev duruşu dirseği 50 → 90 (slave ile birlikte),
     hazır duruşların dirsek değerleri aynı görünümü koruyacak şekilde +90 kaydırıldı.
 
 ### Sonraki adımlar
 
 - [ ] §14'teki saha testleri (güç, kalibrasyon, yön, sınırlar, duruşlar, sürüş, güvenlik, yük).
 - [ ] Sahada doğrulanan duruş açılarının `PoseLibrary.kt` ve firmware `JOINT_HOME`'a işlenmesi.
-- [ ] Dirsek montaj açısını ölç → `ArmKinematics.ELBOW_MOUNT_DEG`; dirseğin güvenli alt sınırını (katlanma/çarpışma) belirle.
+- [ ] Dirsek montaj açısını (`ArmKinematics.ELBOW_MOUNT_DEG`) ve çıkıntı boyunu (`Lengths.elbowOffset`) gerçek koldan ölç.
 - [ ] Gerçek eklem sınırlarının iki tarafta (slave + `Joint.kt`) güncellenmesi.
 - [ ] İsteğe bağlı: gerçek segment boyları, pil gerilimi telemetrisi, far için transistör.
 - [ ] Repoyu public yapmak (GitHub → Settings → General → Danger Zone → Change visibility).

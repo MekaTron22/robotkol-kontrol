@@ -13,10 +13,13 @@ import kotlin.math.sqrt
  *   dirsek mutlak açısı φ2 = φ1 − ELBOW_MOUNT_DEG + (dirsek − 90)
  *   bilek mutlak açısı  φ3 = φ2 + (bilek − 90)                       (bilek 90 = düz devam)
  *
- * Dirsek montajı: ön kol (dirsek–bilek), dirsek servosu ortadayken (90) üst kola
- * ELBOW_MOUNT_DEG (≈90°) açıyla, İLERİ/SAĞ tarafa bakacak şekilde takılıdır. Üst kol dik
- * tutulduğunda ön kol sağa doğru çıkıntı yapar. Dirsek servosu 90 + ELBOW_MOUNT_DEG'e
- * (≈180) gidince ön kol üst kola paralel (düz uzanmış) olur; 0'a doğru gidince aşağı katlanır.
+ * Dirsek çıkıntısı: üst kolun ucunda, kola dik ve SAĞA (ileri) doğru kısa bir çıkıntı
+ * (Lengths.elbowOffset) vardır; dirsek pivotu bu çıkıntının ucundadır. Böylece ön kol aşağı
+ * katlanıp üst kola paralel geldiğinde üst kolun YANINDAN geçer, ona çarpmaz.
+ *
+ * Dirsek montajı: dirsek servosu ortadayken (90) ön kol üst kola ELBOW_MOUNT_DEG (≈90°)
+ * açıyla, sağa/ileri bakar. Dirsek 0 → ön kol aşağı katlanmış, üst kola paralel (çıkıntı
+ * sayesinde yanında); dirsek 180 → ön kol yukarı, üst kolla düz devam.
  * Ters kinematik yoktur: bir eklemi sürüklemek yalnızca o eklemi değiştirir,
  * ondan sonraki segmentler ona yapışık olarak birlikte taşınır.
  * Koordinatlar: x ileri, y yukarı; omuz pivotu (0,0).
@@ -28,8 +31,15 @@ object ArmKinematics {
      */
     const val ELBOW_MOUNT_DEG = 90.0
 
-    data class Lengths(val upper: Double = 1.0, val fore: Double = 0.9, val hand: Double = 0.45) {
-        val reach get() = upper + fore + hand
+    /**
+     * Segment boyları (görsel oran, üst kol = 1).
+     * elbowOffset: dirsek noktasındaki sağa çıkıntı (üst kola dik). Gerçek ölçü gelince güncellenir.
+     */
+    data class Lengths(
+        val upper: Double = 1.0, val fore: Double = 0.9, val hand: Double = 0.45,
+        val elbowOffset: Double = 0.28,
+    ) {
+        val reach get() = sqrt(upper * upper + elbowOffset * elbowOffset) + fore + hand
     }
 
     data class Point(val x: Double, val y: Double)
@@ -44,16 +54,26 @@ object ArmKinematics {
         return doubleArrayOf(a1, a2, a3)
     }
 
-    /** [omuz, dirsek, bilek, uç] noktaları */
+    /** Üst kolun ucu (çıkıntının başladığı köşe). */
+    fun elbowCorner(shoulder: Int, len: Lengths = Lengths()): Point {
+        val r = Math.toRadians(shoulder.toDouble())
+        return Point(len.upper * cos(r), len.upper * sin(r))
+    }
+
+    /** [omuz, dirsek pivotu (çıkıntı ucu), bilek, uç] noktaları */
     fun points(shoulder: Int, elbow: Int, wrist: Int, len: Lengths = Lengths()): List<Point> {
         val abs = absoluteAngles(shoulder, elbow, wrist)
-        val l = doubleArrayOf(len.upper, len.fore, len.hand)
         val pts = ArrayList<Point>(4)
-        var x = 0.0; var y = 0.0
+        pts.add(Point(0.0, 0.0))
+        // üst kol + sağa (saat yönünde 90°) çıkıntı
+        val c = elbowCorner(shoulder, len)
+        val ro = Math.toRadians(abs[0] - 90.0)
+        var x = c.x + len.elbowOffset * cos(ro); var y = c.y + len.elbowOffset * sin(ro)
         pts.add(Point(x, y))
-        for (i in 0..2) {
+        val l = doubleArrayOf(len.fore, len.hand)
+        for (i in 1..2) {
             val r = Math.toRadians(abs[i])
-            x += l[i] * cos(r); y += l[i] * sin(r)
+            x += l[i - 1] * cos(r); y += l[i - 1] * sin(r)
             pts.add(Point(x, y))
         }
         return pts
@@ -72,7 +92,7 @@ object ArmKinematics {
         Segment.HAND -> 90.0
     }
 
-    /** Ön kolun üst kola göre açısı (0 = paralel/düz uzanmış, 90 = dik, sağa doğru pozitif). */
+    /** Ön kolun üst kola göre açısı (0 = düz devam, 90 = dik/sağa, 180 = aşağı katlanmış paralel). */
     fun elbowBendDeg(elbow: Int) = ELBOW_MOUNT_DEG - (elbow - 90)
 
     /**

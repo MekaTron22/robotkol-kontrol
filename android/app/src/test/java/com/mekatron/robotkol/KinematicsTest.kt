@@ -15,24 +15,40 @@ class KinematicsTest {
     private val eps = 1e-9
 
     @Test fun elbowMountedPerpendicularToTheRightAt90() {
-        // Omuz dik, dirsek 90: ön kol üst kola ≈90°, sağa (ileri) doğru çıkıntı
+        // Omuz dik, dirsek 90: dirsek pivotu sağa çıkıntının ucunda, ön kol sağa yatay
         val len = ArmKinematics.Lengths()
         val pts = ArmKinematics.points(90, 90, 90, len)
-        assertEquals(0.0, pts[1].x, eps); assertEquals(len.upper, pts[1].y, eps)
-        assertEquals(len.fore + len.hand, pts[3].x, eps)   // sağa
-        assertEquals(len.upper, pts[3].y, eps)              // yatay
+        assertEquals(len.elbowOffset, pts[1].x, eps); assertEquals(len.upper, pts[1].y, eps)
+        assertEquals(len.elbowOffset + len.fore + len.hand, pts[3].x, eps)   // sağa
+        assertEquals(len.upper, pts[3].y, eps)                                // yatay
         assertEquals(90.0, ArmKinematics.elbowBendDeg(90), eps)
     }
 
-    @Test fun elbowCanReachParallelToUpperArm() {
-        // Dirsek 180: ön kol üst kola paralel → kol tamamen düz yukarı
-        val pts = ArmKinematics.points(90, Joint.ELBOW.servoMax, 90)
-        assertEquals(0.0, pts.last().x, 1e-9)
-        assertEquals(ArmKinematics.Lengths().reach, pts.last().y, eps)
-        assertEquals(0.0, ArmKinematics.elbowBendDeg(180), eps)
-        // sürükleyerek de paralele gelinebilmeli (sınıra kırpılmadan)
+    @Test fun elbowFoldsParallelBesideUpperArmWithoutCollision() {
+        // Dirsek 0: ön kol aşağı katlanır, üst kola paralel; çıkıntı kadar sağında kalır
+        val len = ArmKinematics.Lengths()
+        for (shoulder in intArrayOf(45, 90, 120)) {
+            val pts = ArmKinematics.points(shoulder, Joint.ELBOW.servoMin, 90, len)
+            val abs = ArmKinematics.absoluteAngles(shoulder, Joint.ELBOW.servoMin, 90)
+            assertEquals(abs[0] - 180.0, abs[1], eps)                         // paralel (ters yön)
+            val corner = ArmKinematics.elbowCorner(shoulder, len)
+            // ön kolun iki ucu da üst kol doğrusuna çıkıntı kadar uzak → çarpışma yok
+            for (p in listOf(pts[1], pts[2]))
+                assertEquals(len.elbowOffset, ArmKinematics.distanceToSegment(p, pts[0], corner), 1e-6)
+        }
+        assertEquals(180.0, ArmKinematics.elbowBendDeg(0), eps)
+    }
+
+    @Test fun elbowCanGoStraightUp() {
+        // Dirsek 180: ön kol üst kolla düz devam (çıkıntı kadar sağda, dik)
+        val len = ArmKinematics.Lengths()
+        val pts = ArmKinematics.points(90, Joint.ELBOW.servoMax, 90, len)
+        assertEquals(len.elbowOffset, pts.last().x, 1e-9)
+        assertEquals(len.upper + len.fore + len.hand, pts.last().y, eps)
+        // sürükleyerek de ulaşılabilmeli (sınıra kırpılmadan)
         val parent = ArmKinematics.parentAbsolute(Segment.FORE, 100, 90, 90)
         assertEquals(180, ArmKinematics.servoForAbsolute(Segment.FORE, 100.0, parent, 0, 180))
+        assertEquals(0, ArmKinematics.servoForAbsolute(Segment.FORE, -80.0, parent, 0, 180))
     }
 
     @Test fun childFollowsParentRotation() {
