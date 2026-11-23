@@ -30,38 +30,49 @@ class HSliderView @JvmOverloads constructor(ctx: Context, attrs: AttributeSet? =
     private var dragging = false
     private var lastTapMs = 0L
 
-    private val track = RoverTheme.stroke(ctx, RoverTheme.ORANGE, 4f)
-    private val thumb = RoverTheme.fill(RoverTheme.THUMB)
-    private val thumbActive = RoverTheme.fill(RoverTheme.ACTIVE)
-    private val labelPaint = RoverTheme.text(ctx, RoverTheme.TEXT, 13f, bold = true).apply { textAlign = Paint.Align.LEFT }
-    private val valuePaint = RoverTheme.text(ctx, RoverTheme.ACTIVE, 13f, bold = true).apply { textAlign = Paint.Align.RIGHT }
-    private val endPaint = RoverTheme.text(ctx, RoverTheme.TEXT_DIM, 11f)
+    /** Dolgu nereden başlasın: true = [centerValue]'dan (rotasyon), false = sol uçtan (kıskaç) */
+    var fillFromCenter = false
+
+    private val card = RoverTheme.Card(ctx)
+    private val trackPaint = RoverTheme.fill(RoverTheme.PANEL_2)
+    private val fillPaint = RoverTheme.fill(RoverTheme.withAlpha(RoverTheme.ORANGE, 170))
+    private val centerTick = RoverTheme.stroke(ctx, RoverTheme.TEXT_FAINT, 2f)
+    private val labelPaint = RoverTheme.text(ctx, RoverTheme.TEXT_DIM, 12f, bold = true).apply { textAlign = Paint.Align.LEFT }
+    private val valuePaint = RoverTheme.text(ctx, RoverTheme.TEXT, 15f, bold = true).apply { textAlign = Paint.Align.RIGHT }
+    private val endPaint = RoverTheme.text(ctx, RoverTheme.TEXT_FAINT, 11f)
 
     private fun d(v: Float) = RoverTheme.dp(context, v)
-    private fun left() = d(22f)
-    private fun right() = width - d(22f)
-    private fun trackY() = (d(22f) + height - d(16f)) / 2f
+    private fun left() = d(34f)
+    private fun right() = width - d(34f)
+    private fun trackY() = (d(34f) + height - d(22f)) / 2f
 
     fun setValue(v: Int, notify: Boolean = false) {
         val nv = v.coerceIn(min, max)
         if (nv != value) { value = nv; invalidate(); if (notify) onValueChanged?.invoke(nv) }
     }
 
-    private fun fraction(): Float {
-        val f = (value - min).toFloat() / (max - min).coerceAtLeast(1)
+    private fun fractionOf(v: Int): Float {
+        val f = (v - min).toFloat() / (max - min).coerceAtLeast(1)
         return if (reversed) 1f - f else f
     }
 
     override fun onDraw(c: Canvas) {
+        card.draw(c, width, height, highlighted = dragging)
         val l = left(); val r = right(); val y = trackY()
-        val h = d(18f)
-        c.drawText(label, l - d(8f), d(16f), labelPaint)
-        c.drawText("$value°", r + d(8f), d(16f), valuePaint)
-        c.drawRoundRect(l - h / 2, y - h / 2, r + h / 2, y + h / 2, h / 2, h / 2, track)
-        val x = l + fraction() * (r - l)
-        c.drawCircle(x, y, h * 0.8f, if (dragging) thumbActive else thumb)
-        if (leftText.isNotEmpty()) c.drawText(leftText, l + d(10f), height - d(3f), endPaint)
-        if (rightText.isNotEmpty()) c.drawText(rightText, r - d(10f), height - d(3f), endPaint)
+        val h = d(12f)
+        c.drawText(label, d(18f), d(26f), labelPaint)
+        valuePaint.color = if (dragging) RoverTheme.ACTIVE else RoverTheme.TEXT
+        c.drawText("$value°", width - d(18f), d(26f), valuePaint)
+
+        c.drawRoundRect(l - h, y - h / 2, r + h, y + h / 2, h / 2, h / 2, trackPaint)
+        val x = l + fractionOf(value) * (r - l)
+        val from = if (fillFromCenter) l + fractionOf(centerValue) * (r - l) else l - h
+        if (fillFromCenter) c.drawLine(from, y - h, from, y + h, centerTick)
+        c.drawRoundRect(minOf(from, x), y - h / 2, maxOf(from, x), y + h / 2, h / 2, h / 2, fillPaint)
+        RoverTheme.drawThumb(context, c, x, y, d(13f), dragging)
+
+        if (leftText.isNotEmpty()) c.drawText(leftText, l, height - d(12f), endPaint)
+        if (rightText.isNotEmpty()) c.drawText(rightText, r, height - d(12f), endPaint)
     }
 
     override fun onTouchEvent(e: MotionEvent): Boolean {

@@ -2,6 +2,7 @@ package com.mekatron.robotkol.ui
 
 import android.content.Context
 import android.graphics.Canvas
+import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.MotionEvent
 import android.view.View
@@ -33,18 +34,25 @@ class RootWheelView @JvmOverloads constructor(ctx: Context, attrs: AttributeSet?
     private var accum = 0.0          // sürükleme sırasında kesirli birikim
     private var lastTapMs = 0L
 
-    private val rim = RoverTheme.stroke(ctx, RoverTheme.ORANGE, 6f)
-    private val spoke = RoverTheme.stroke(ctx, RoverTheme.ORANGE, 5f)
-    private val arc = RoverTheme.stroke(ctx, RoverTheme.ORANGE_DIM, 3f)
-    private val knob = RoverTheme.fill(RoverTheme.THUMB)
-    private val knobActive = RoverTheme.fill(RoverTheme.ACTIVE)
-    private val labelPaint = RoverTheme.text(ctx, RoverTheme.TEXT, 13f, bold = true)
-    private val valuePaint = RoverTheme.text(ctx, RoverTheme.TEXT_DIM, 12f)
+    private val card = RoverTheme.Card(ctx)
+    private val ring = RoverTheme.stroke(ctx, RoverTheme.PANEL_2, 7f).apply { strokeCap = Paint.Cap.BUTT }
+    private val valueArc = RoverTheme.stroke(ctx, RoverTheme.ORANGE, 7f)
+    private val tick = RoverTheme.stroke(ctx, RoverTheme.TEXT_FAINT, 1.5f)
+    private val tickMain = RoverTheme.stroke(ctx, RoverTheme.TEXT_DIM, 2f)
+    private val rim = RoverTheme.stroke(ctx, RoverTheme.ORANGE, 4f)
+    private val spoke = RoverTheme.stroke(ctx, RoverTheme.withAlpha(RoverTheme.ORANGE, 170), 4f)
+    private val hub = RoverTheme.fill(RoverTheme.PANEL_2)
+    private val labelPaint = RoverTheme.text(ctx, RoverTheme.TEXT_DIM, 12f, bold = true).apply { textAlign = Paint.Align.LEFT }
+    private val valuePaint = RoverTheme.text(ctx, RoverTheme.TEXT, 16f, bold = true).apply { textAlign = Paint.Align.LEFT }
+    private val hintPaint = RoverTheme.text(ctx, RoverTheme.TEXT_FAINT, 10f).apply { textAlign = Paint.Align.LEFT }
 
     private fun d(v: Float) = RoverTheme.dp(context, v)
-    private fun cx() = width / 2f
-    private fun cy() = d(22f) + (height - d(22f) - d(18f)) / 2f
-    private fun radius() = min(width / 2f, (height - d(22f) - d(18f)) / 2f) - d(8f)
+    // yazılar solda, çark sağda
+    private fun textW() = d(78f)
+    private fun cx() = textW() + (width - textW() - d(6f)) / 2f
+    private fun cy() = height / 2f
+    private fun outer() = min((width - textW() - d(6f)) / 2f, height / 2f) - d(14f)
+    private fun radius() = outer() - d(9f)
 
     fun setAngle(a: Int, notify: Boolean = false) {
         val v = a.coerceIn(minAngle, maxAngle)
@@ -52,31 +60,41 @@ class RootWheelView @JvmOverloads constructor(ctx: Context, attrs: AttributeSet?
     }
 
     override fun onDraw(c: Canvas) {
+        card.draw(c, width, height, highlighted = dragging)
         val cx = cx(); val cy = cy(); val r = radius()
-        if (r <= 0) return
-        c.drawText("ÇEVRİLEBİLİR KÖK", cx, d(15f), labelPaint)
-
-        // dönüş = saat yönünde derece (ekranda), servo 90 iken 0
-        val rot = (90 - angle).toFloat()
-        // aralık yayı
-        c.drawArc(cx - r - d(10f), cy - r - d(10f), cx + r + d(10f), cy + r + d(10f),
-            -90f - (maxAngle - 90), (maxAngle - minAngle).toFloat(), false, arc)
-
-        c.save()
-        c.rotate(rot, cx, cy)
-        c.drawCircle(cx, cy, r, rim)
-        // Y şeklinde 3 kol (çizimdeki gibi)
-        for (deg in intArrayOf(-90, 30, 150)) {
-            val rad = Math.toRadians(deg.toDouble())
-            c.drawLine(cx, cy, cx + (r * cos(rad)).toFloat(), cy + (r * sin(rad)).toFloat(), spoke)
-        }
-        // tutamak (sağ kenarda)
-        c.drawCircle(cx, cy - r, d(13f), if (dragging) knobActive else knob)
-        c.restore()
-
+        c.drawText("KÖK", d(18f), d(28f), labelPaint)
         val turn = 90 - angle
         val dir = when { turn > 0 -> "SAĞ $turn°"; turn < 0 -> "SOL ${-turn}°"; else -> "İLERİ" }
-        c.drawText(dir, cx, height - d(4f), valuePaint)
+        valuePaint.color = if (turn == 0) RoverTheme.TEXT else RoverTheme.ORANGE_LIGHT
+        c.drawText(dir, d(18f), d(52f), valuePaint)
+        c.drawText("çift dokun:", d(18f), height - d(26f), hintPaint)
+        c.drawText("ileri", d(18f), height - d(13f), hintPaint)
+        if (r <= d(8f)) return
+
+        // dış halka: izinli aralık + ortadan (ileri) mevcut açıya değer yayı
+        val ro = outer()
+        val startDeg = -90f - (maxAngle - 90)
+        c.drawArc(cx - ro, cy - ro, cx + ro, cy + ro, startDeg, (maxAngle - minAngle).toFloat(), false, ring)
+        if (turn != 0) c.drawArc(cx - ro, cy - ro, cx + ro, cy + ro, -90f, turn.toFloat(), false, valueArc)
+        // çentikler: her 45°
+        for (deg in -90..90 step 45) {
+            val a = Math.toRadians((deg - 90).toDouble())
+            val r1 = ro + d(6f); val r2 = ro + if (deg == 0) d(12f) else d(9f)
+            c.drawLine(cx + (r1 * cos(a)).toFloat(), cy + (r1 * sin(a)).toFloat(),
+                cx + (r2 * cos(a)).toFloat(), cy + (r2 * sin(a)).toFloat(), if (deg == 0) tickMain else tick)
+        }
+
+        c.save()
+        c.rotate(turn.toFloat(), cx, cy)
+        val rw = r - d(4f)
+        c.drawCircle(cx, cy, rw, rim)
+        for (deg in intArrayOf(-90, 30, 150)) {
+            val rad = Math.toRadians(deg.toDouble())
+            c.drawLine(cx, cy, cx + (rw * cos(rad)).toFloat(), cy + (rw * sin(rad)).toFloat(), spoke)
+        }
+        c.drawCircle(cx, cy, rw * 0.22f, hub)
+        RoverTheme.drawThumb(context, c, cx, cy - rw, d(10f), dragging)
+        c.restore()
     }
 
     private fun touchDeg(x: Float, y: Float) = Math.toDegrees(atan2((y - cy()).toDouble(), (x - cx()).toDouble()))

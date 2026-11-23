@@ -32,19 +32,20 @@ class DriveSliderView @JvmOverloads constructor(ctx: Context, attrs: AttributeSe
     /** Parmak yokken her zaman 0 (geri dönüş animasyonu sırasında bile) */
     val value: Int get() = if (pointerId < 0) 0 else toPwm(pos)
 
-    private val track = RoverTheme.stroke(ctx, RoverTheme.ORANGE, 4f)
-    private val fillPaint = RoverTheme.fill(RoverTheme.ORANGE_DIM)
-    private val center = RoverTheme.stroke(ctx, RoverTheme.TEXT_DIM, 1.5f)
-    private val thumb = RoverTheme.fill(RoverTheme.THUMB)
-    private val thumbActive = RoverTheme.fill(RoverTheme.ACTIVE)
-    private val labelPaint = RoverTheme.text(ctx, RoverTheme.TEXT, 15f, bold = true)
-    private val valuePaint = RoverTheme.text(ctx, RoverTheme.TEXT_DIM, 12f)
+    private val card = RoverTheme.Card(ctx)
+    private val trackPaint = RoverTheme.fill(RoverTheme.PANEL_2)
+    private val fillPaint = RoverTheme.fill(RoverTheme.ORANGE)
+    private val tickPaint = RoverTheme.stroke(ctx, RoverTheme.TEXT_FAINT, 1.5f)
+    private val centerPaint = RoverTheme.stroke(ctx, RoverTheme.TEXT_DIM, 2f)
+    private val labelPaint = RoverTheme.text(ctx, RoverTheme.TEXT_DIM, 12f, bold = true)
+    private val valuePaint = RoverTheme.text(ctx, RoverTheme.TEXT, 15f, bold = true)
+    private val dirPaint = RoverTheme.text(ctx, RoverTheme.TEXT_DIM, 11f)
     private val rect = RectF()
 
     private fun d(v: Float) = RoverTheme.dp(context, v)
 
-    private fun trackTop() = d(34f) + d(22f)
-    private fun trackBottom() = height - d(22f) - d(20f)
+    private fun trackTop() = d(40f)
+    private fun trackBottom() = height - d(52f)
 
     companion object {
         const val DEADZONE = 0.08f
@@ -58,22 +59,41 @@ class DriveSliderView @JvmOverloads constructor(ctx: Context, attrs: AttributeSe
     }
 
     override fun onDraw(c: Canvas) {
+        val active = pointerId >= 0
+        card.draw(c, width, height, highlighted = active)
         val cx = width / 2f
-        val w = minOf(width * 0.42f, d(56f))
+        val w = minOf(width - d(36f), d(58f))
         val top = trackTop(); val bot = trackBottom()
         val mid = (top + bot) / 2f
+        val half = (bot - top) / 2f
 
         c.drawText(label, cx, d(26f), labelPaint)
 
+        // yuva
         rect.set(cx - w / 2, top, cx + w / 2, bot)
-        val thumbY = mid - pos * (bot - top) / 2f
-        // değer dolgusu (ortadan başparmağa)
-        c.drawRoundRect(cx - w / 2 + d(4f), minOf(mid, thumbY), cx + w / 2 - d(4f), maxOf(mid, thumbY), d(6f), d(6f), fillPaint)
-        c.drawRoundRect(rect, w / 2, w / 2, track)
-        c.drawLine(cx - w / 2 - d(6f), mid, cx + w / 2 + d(6f), mid, center)
+        c.drawRoundRect(rect, w / 2, w / 2, trackPaint)
+        // çentikler (%25, %50, %75)
+        for (f in floatArrayOf(-0.75f, -0.5f, -0.25f, 0.25f, 0.5f, 0.75f)) {
+            val y = mid - f * half
+            c.drawLine(cx - w / 2 + d(8f), y, cx - w / 2 + d(14f), y, tickPaint)
+            c.drawLine(cx + w / 2 - d(14f), y, cx + w / 2 - d(8f), y, tickPaint)
+        }
+        // değer dolgusu: ileri turuncu, geri mavi
+        val thumbY = mid - pos * half
+        val col = if (pos >= 0) RoverTheme.ORANGE else RoverTheme.BLUE
+        fillPaint.color = RoverTheme.withAlpha(col, if (active) 150 else 90)
+        val inset = d(5f)
+        if (abs(thumbY - mid) > 1f) c.drawRoundRect(cx - w / 2 + inset, minOf(mid, thumbY), cx + w / 2 - inset,
+            maxOf(mid, thumbY), d(10f), d(10f), fillPaint)
+        c.drawLine(cx - w / 2 - d(4f), mid, cx + w / 2 + d(4f), mid, centerPaint)
 
-        c.drawCircle(cx, thumbY, w * 0.48f, if (pointerId >= 0) thumbActive else thumb)
-        c.drawText(if (value == 0) "DUR" else "$value", cx, height - d(10f), valuePaint)
+        RoverTheme.drawThumb(context, c, cx, thumbY, w * 0.42f, active, ring = col)
+
+        val v = value
+        val pct = (abs(v) * 100 / 255)
+        valuePaint.color = if (v == 0) RoverTheme.TEXT_DIM else col
+        c.drawText(if (v == 0) "DUR" else "%$pct", cx, height - d(28f), valuePaint)
+        c.drawText(when { v > 0 -> "İLERİ"; v < 0 -> "GERİ"; else -> "bırak = dur" }, cx, height - d(13f), dirPaint)
     }
 
     override fun onTouchEvent(e: MotionEvent): Boolean {

@@ -14,11 +14,41 @@ import org.junit.Test
 class KinematicsTest {
     private val eps = 1e-9
 
-    @Test fun straightUpWhenAll90() {
-        val pts = ArmKinematics.points(90, 90, 90)
-        val tip = pts.last()
-        assertEquals(0.0, tip.x, 1e-9)
-        assertEquals(ArmKinematics.Lengths().reach, tip.y, eps)
+    @Test fun elbowMountedPerpendicularToTheRightAt90() {
+        // Omuz dik, dirsek 90: dirsek pivotu sağa çıkıntının ucunda, ön kol sağa yatay
+        val len = ArmKinematics.Lengths()
+        val pts = ArmKinematics.points(90, 90, 90, len)
+        assertEquals(len.elbowOffset, pts[1].x, eps); assertEquals(len.upper, pts[1].y, eps)
+        assertEquals(len.elbowOffset + len.fore + len.hand, pts[3].x, eps)   // sağa
+        assertEquals(len.upper, pts[3].y, eps)                                // yatay
+        assertEquals(90.0, ArmKinematics.elbowBendDeg(90), eps)
+    }
+
+    @Test fun elbowFoldsParallelBesideUpperArmWithoutCollision() {
+        // Dirsek 0: ön kol aşağı katlanır, üst kola paralel; çıkıntı kadar sağında kalır
+        val len = ArmKinematics.Lengths()
+        for (shoulder in intArrayOf(45, 90, 120)) {
+            val pts = ArmKinematics.points(shoulder, Joint.ELBOW.servoMin, 90, len)
+            val abs = ArmKinematics.absoluteAngles(shoulder, Joint.ELBOW.servoMin, 90)
+            assertEquals(abs[0] - 180.0, abs[1], eps)                         // paralel (ters yön)
+            val corner = ArmKinematics.elbowCorner(shoulder, len)
+            // ön kolun iki ucu da üst kol doğrusuna çıkıntı kadar uzak → çarpışma yok
+            for (p in listOf(pts[1], pts[2]))
+                assertEquals(len.elbowOffset, ArmKinematics.distanceToSegment(p, pts[0], corner), 1e-6)
+        }
+        assertEquals(180.0, ArmKinematics.elbowBendDeg(0), eps)
+    }
+
+    @Test fun elbowCanGoStraightUp() {
+        // Dirsek 180: ön kol üst kolla düz devam (çıkıntı kadar sağda, dik)
+        val len = ArmKinematics.Lengths()
+        val pts = ArmKinematics.points(90, Joint.ELBOW.servoMax, 90, len)
+        assertEquals(len.elbowOffset, pts.last().x, 1e-9)
+        assertEquals(len.upper + len.fore + len.hand, pts.last().y, eps)
+        // sürükleyerek de ulaşılabilmeli (sınıra kırpılmadan)
+        val parent = ArmKinematics.parentAbsolute(Segment.FORE, 100, 90, 90)
+        assertEquals(180, ArmKinematics.servoForAbsolute(Segment.FORE, 100.0, parent, 0, 180))
+        assertEquals(0, ArmKinematics.servoForAbsolute(Segment.FORE, -80.0, parent, 0, 180))
     }
 
     @Test fun childFollowsParentRotation() {
@@ -27,16 +57,19 @@ class KinematicsTest {
         val b = ArmKinematics.absoluteAngles(100, 40, 120)
         assertEquals(a[1] - a[0], b[1] - b[0], eps)
         assertEquals(a[2] - a[1], b[2] - b[1], eps)
-        assertEquals(40.0, b[1] - b[0] + 90, eps)
+        assertEquals(40.0, b[1] - b[0] + ArmKinematics.ELBOW_MOUNT_DEG + 90, eps)
     }
 
     @Test fun draggingOnlyChangesThatJoint() {
-        // Ön kolu mutlak 0°'ye (yatay ileri) getir: omuz 120 iken dirsek = 90 + (0 - 120) = -30 → 0'a kırpılır
+        // Ön kolu mutlak 0°'ye (yatay ileri) getir: omuz 120 iken dirsek = 180 + (0 - 120) = 60
         val parent = ArmKinematics.parentAbsolute(Segment.FORE, 120, 90, 90)
-        assertEquals(0, ArmKinematics.servoForAbsolute(Segment.FORE, 0.0, parent, 0, 180))
-        // omuz 60 iken aynı istek: 90 + (0 - 60) = 30
+        assertEquals(60, ArmKinematics.servoForAbsolute(Segment.FORE, 0.0, parent, 0, 180))
+        // omuz 60 iken aynı istek: 180 + (0 - 60) = 120
         val p2 = ArmKinematics.parentAbsolute(Segment.FORE, 60, 90, 90)
-        assertEquals(30, ArmKinematics.servoForAbsolute(Segment.FORE, 0.0, p2, 0, 180))
+        assertEquals(120, ArmKinematics.servoForAbsolute(Segment.FORE, 0.0, p2, 0, 180))
+        // ön kolu üst kolun 30° ötesine istemek: 180 + 30 = 210 → üst sınır 180'e (paralel) kırpılır
+        val p3 = ArmKinematics.parentAbsolute(Segment.FORE, 60, 90, 90)
+        assertEquals(180, ArmKinematics.servoForAbsolute(Segment.FORE, 90.0, p3, 0, 180))
     }
 
     @Test fun shoulderWrapsToNearestLimit() {

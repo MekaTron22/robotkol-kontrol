@@ -4,7 +4,7 @@ package com.mekatron.robotkol.core
 enum class Joint(val label: String, val servoMin: Int, val servoMax: Int, val home: Int) {
     ROOT("Kök", 0, 180, 90),
     SHOULDER("Omuz", 15, 165, 100),
-    ELBOW("Dirsek", 0, 180, 50),
+    ELBOW("Dirsek", 0, 180, 90),
     WRIST_PITCH("Bilek", 0, 180, 70),
     WRIST_ROLL("Rotasyon", 0, 180, 90),
     GRIP("Kıskaç", 20, 110, 60);

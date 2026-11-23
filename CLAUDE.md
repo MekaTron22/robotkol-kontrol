@@ -6,6 +6,7 @@ Kullanıcıyla Türkçe konuş. Tüm bağlam: `docs/PROJE_OZETI.md` (önce bunu 
 - Android (Kotlin, `android/`) → HC-05 → Master Uno (`firmware/rover_master`) → I2C 0x08 → Slave Uno (`firmware/rover_slave`, 7 servo).
 - Omuz: Arm A1 + Arm A2 zıt çalışır (A2 = 180 − A1 + `SHOULDER_A2_TRIM`).
 - Kol arayüzü İLERİ kinematik: her segment bir öncekine göre döner; ters kinematik istenmiyor.
+- Dirsek: üst kolun ucunda SAĞA küçük çıkıntı var, dirsek pivotu onun ucunda (`Lengths.elbowOffset`) → ön kol katlanınca üst kolun yanından geçer. Servo 90 = ön kol üst kola ≈90° sağa (`ELBOW_MOUNT_DEG`), 0 = aşağı katlanmış paralel, 180 = düz devam. Kullanıcı gerçek ölçüleri verebilir.
 - Protokol `<GÖVDE*CS>` (XOR sağlama). Değiştirirsen hem `core/Protocol.kt` hem master'ı güncelle.
 - Eklem sınırları/ev pozu iki yerde: slave `JOINT_MIN/MAX/HOME` ve `android/.../core/Joints.kt` – birlikte değiştir.
 - Referans duruşlar: `android/.../core/PoseLibrary.kt` (sahada doğrulanacak).

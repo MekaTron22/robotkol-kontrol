@@ -109,7 +109,7 @@ class MainActivity : Activity(), BluetoothLink.Listener {
         driveLeft.label = "SOL DC"
         driveRight.label = "SAĞ DC"
         gripSlider.apply { label = "KISKAÇ"; leftText = "açık"; rightText = "kapalı" }
-        rollSlider.apply { label = "SAĞ / SOL ROTASYON"; leftText = "sol"; rightText = "sağ"; centerValue = 90 }
+        rollSlider.apply { label = "ROTASYON"; leftText = "sol"; rightText = "sağ"; centerValue = 90; fillFromCenter = true }
 
         speedIndex = prefs.getInt(PREF_SPEED, 1).coerceIn(0, 2)
         loadInversion()
@@ -326,14 +326,15 @@ class MainActivity : Activity(), BluetoothLink.Listener {
     private fun updateButtons() {
         btnConnect.text = if (link.state == BluetoothLink.State.DISCONNECTED) getString(R.string.connect) else getString(R.string.disconnect)
         btnSpeed.text = "Hız: ${speedNames[speedIndex]}"
-        btnLight.setTextColor(if (lightOn) RoverTheme.ORANGE else RoverTheme.TEXT)
+        btnLight.text = if (lightOn) "Far ● açık" else getString(R.string.light)
+        btnLight.setTextColor(if (lightOn) RoverTheme.ORANGE_LIGHT else RoverTheme.TEXT)
     }
 
     private fun updateStatus() {
         val s = when (link.state) {
             BluetoothLink.State.DISCONNECTED -> "● Bağlı değil"
             BluetoothLink.State.CONNECTING -> "● Bağlanıyor: ${deviceName ?: ""}"
-            BluetoothLink.State.CONNECTED -> "● ${deviceName ?: "HC-05"}   " + if (slaveOk) "Kol ● hazır" else "Kol ○ yanıt yok"
+            BluetoothLink.State.CONNECTED -> "● ${deviceName ?: "HC-05"}  ·  " + if (slaveOk) "kol hazır" else "kol yanıt vermiyor"
         }
         txtStatus.text = s
         txtStatus.setTextColor(
