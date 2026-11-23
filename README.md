@@ -7,6 +7,8 @@
 
 ![Ana ekran](docs/img/ekran_ev.png)
 
+**📘 Ayrıntılı proje özeti (tüm özellikler, protokol, testler, riskler):** [docs/PROJE_OZETI.md](docs/PROJE_OZETI.md)
+
 **Bağlantı şeması:** [docs/baglanti_semasi.png](docs/baglanti_semasi.png) (vektör: [SVG](docs/baglanti_semasi.svg))
 
 ![Bağlantı şeması](docs/baglanti_semasi.png)
@@ -21,6 +23,7 @@ Ayrıntılı plan, pin tabloları, protokol ve tespit edilen donanım riskleri: 
 | `firmware/rover_master/` | Master Uno (HC-05, L293D, I2C master) |
 | `firmware/rover_slave/` | Slave Uno (7 servo, I2C slave 0x08) |
 | `android/` | Android Studio / Gradle projesi |
+| `docs/PROJE_OZETI.md` | Tüm çalışmanın ayrıntılı yazılı özeti |
 | `docs/` | Plan, bağlantı şeması (PNG/SVG), ekran görüntüleri |
 | `tools/baglanti_semasi_uret.py` | Şemayı yeniden üreten betik (`python3 tools/baglanti_semasi_uret.py docs/baglanti_semasi.svg`) |
 

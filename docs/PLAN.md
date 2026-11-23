@@ -1,5 +1,7 @@
 # Robot Kollu Rover – Plan ve Proje Şeması
 
+> Tüm çalışmanın ayrıntılı özeti: [PROJE_OZETI.md](PROJE_OZETI.md)
+
 ## 1. Elimizdeki donanım
 
 | Parça | Adet | Not |
