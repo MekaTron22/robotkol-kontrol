@@ -32,6 +32,10 @@ PDF'teki şemadan **çıkanlar:** Arduino Mega, NRF24L01, kumanda (joystick, pot
 
 ## 3. Bağlantı tablosu
 
+Görsel şema: [baglanti_semasi.png](baglanti_semasi.png) · [SVG](baglanti_semasi.svg)
+
+![Bağlantı şeması](baglanti_semasi.png)
+
 ### Master Uno
 | Uno pini | Bağlantı |
 |---|---|
