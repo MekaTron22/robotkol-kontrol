@@ -42,7 +42,7 @@ Teslim edilenler:
 | Slave Arduino Uno firmware'i (7 servo) | Tamamlandı, derleniyor |
 | Plan, pin tabloları, protokol belgesi | `docs/PLAN.md` |
 | Görsel bağlantı şeması (PNG + SVG) ve üretici betik | `docs/`, `tools/` |
-| Birim testleri + ekran görüntüsü testi | 15 test, hepsi geçiyor |
+| Birim testleri + ekran görüntüsü testi | 16 test, hepsi geçiyor |
 
 Kullanıcı gereksinimleri (sohbetten):
 
@@ -258,7 +258,7 @@ Telemetri yalnız bağlantı canlıyken gönderilir.
 
 ## 8. Android uygulaması
 
-Kaynak: [`android/`](../android) · APK: [`release/RobotKolRover-v1.0.apk`](../release/RobotKolRover-v1.0.apk)
+Kaynak: [`android/`](../android) · APK: [`release/RobotKolRover-v1.1.apk`](../release/RobotKolRover-v1.1.apk)
 
 ### 8.1 Teknik özet
 
@@ -279,19 +279,23 @@ Kaynak: [`android/`](../android) · APK: [`release/RobotKolRover-v1.0.apk`](../r
 ![Ana ekran](img/ekran_ev.png)
 
 ```
-┌──────────────────────────────────────────────────────────────────────────┐
-│ [Bağlan] durum               [Hız] [Far] [Duruşlar] [Ev] [Ayarlar] [ACİL DUR] │
-├──────┬───────────────────────────────────────────────────────────┬──────┤
-│ SOL  │  ÇEVRİLEBİLİR KÖK        KISKAÇ        ════●═════          │ SAĞ  │
-│ DC   │    (çark)                SAĞ/SOL ROT.  ═════●════          │ DC   │
-│  ║   │  ETKİLEŞİMLİ KOL KONTROLÜ (yandan görünüş)                  │  ║   │
-│  ●   │                 kol + kıskaç + zemin + erişim yayı          │  ●   │
-└──────┴───────────────────────────────────────────────────────────┴──────┘
+┌────────────────────────────────────────────────────────────────────────────┐
+│ [Bağlan] (durum hapı)          [Hız] [Far] [Duruşlar] [Ev] [Ayarlar] [ACİL DUR] │
+├──────┬───────────┬──────────────────┬──────────────────┬──────┤
+│ SOL  │ KÖK (çark)│ KISKAÇ ═══●════  │ ROTASYON ════●═══│ SAĞ  │
+│ DC   ├───────────┴──────────────────┴──────────────────┤ DC   │
+│  ║   │ KOL  ┌ −  OMUZ 100°  + ┐                         │  ║   │
+│  ●   │      │ −  DİRSEK 90° + │   kol + rover + erişim   │  ●   │
+│      │      └ −  BİLEK 70°  + ┘   yayı (yandan görünüş) │      │
+└──────┴─────────────────────────────────────────────────┴──────┘
 ```
 
-Düzen, kullanıcının çizdiği taslağın yatay hâline göre yapıldı: sürgüler kenarlarda başparmak erişiminde,
-kök çarkı sol üstte, kıskaç ve rotasyon sürgüleri sağ üstte, etkileşimli kol altta geniş alanda.
-Renkler taslaktaki gibi: siyah zemin, turuncu hatlar, gri tutamaklar.
+v1.1 ile arayüz modernleştirildi (aynı yerleşim mantığı, yeni görünüm):
+- Her denetim yuvarlak köşeli bir **kart** içinde; koyu-mavimsi zemin, turuncu vurgu, gölgeli beyaz tutamaklar.
+- Sürüş sürgüleri kenarlarda başparmak altında; **ileri turuncu, geri mavi** dolgu ve **yüzde** göstergesi.
+- **ACİL DUR** sağ üstte daha büyük ve kırmızı (sağ başparmağa yakın).
+- Durum bir "hap" içinde; Far açıkken düğmede "Far ● açık" yazar.
+- Kol kartının solunda **eklem paneli**: her eklem için büyük değer ve **−/+ ince ayar** düğmeleri.
 
 ### 8.3 Kontroller
 
@@ -304,16 +308,16 @@ Renkler taslaktaki gibi: siyah zemin, turuncu hatlar, gri tutamaklar.
 - Alt etikette güncel PWM veya "DUR" yazar.
 
 #### Çevrilebilir kök (`RootWheelView`)
-- Taslaktaki gibi Y kollu direksiyon çarkı; tutamaktan veya çarkın herhangi bir yerinden döndürülür.
+- Y kollu direksiyon çarkı; tutamaktan veya çarkın herhangi bir yerinden döndürülür. Yazılar kartın solunda, çark sağında.
 - Saat yönü = sağa = servo açısı azalır; aralık ±90° (servo 0..180). Bırakınca yerinde kalır.
 - Merkeze çok yakın dokunuşlar (yarıçapın %20'si) yok sayılır (açı kararsızlığı).
 - **Çift dokunma:** ileri (90°).
-- Altta yön yazısı: "İLERİ", "SAĞ 30°", "SOL 45°". Dış yay izin verilen aralığı gösterir.
+- Yön yazısı: "İLERİ", "SAĞ 30°", "SOL 45°". Dış halka izin verilen aralığı, turuncu yay ileriden sapmayı gösterir.
 
 #### Kıskaç ve Sağ/Sol rotasyon (`HSliderView`)
 - Yatay sürgüler; bırakınca yerinde kalır; sağ üstte güncel açı.
 - Kıskaç: sol = açık, sağ = kapalı (aralık 20..110). Çift dokunma: orta.
-- Rotasyon: sol/sağ, çift dokunma: 90°.
+- Rotasyon: sol/sağ, çift dokunma: 90°; dolgu ortadan (90°) başlar.
 - Kıskaç açıklığı ve rotasyon kol çiziminde de gösterilir (pençe açıklığı, bilekteki küçük ibre).
 
 #### Etkileşimli kol kontrolü (`ArmView`)
@@ -322,21 +326,30 @@ Renkler taslaktaki gibi: siyah zemin, turuncu hatlar, gri tutamaklar.
 - **Yalnız dokunulan segmentin eklemi değişir.** Sonraki segmentler göreli açılarını korur ve onunla birlikte taşınır (§9).
 - Tutma ofseti: segmentin ucundan tutmasanız da segment zıplamaz; dokunduğunuz noktanın açısı korunur.
 - Pivota 18 dp'den yakın dokunuşlar yok sayılır.
-- Sürüklenen segment açık sarıyla vurgulanır; her segmentin yanında açı etiketi (Omuz / Dirsek / Bilek) yazar.
+- Sürüklenen segment açık sarıyla ve hâleyle vurgulanır; sağ üstte değer balonu çıkar.
+- Sürüklerken etkin eklemin **izinli dönüş aralığı** pivot etrafında yay olarak gösterilir; dirsekte ayrıca
+  **üst kolun uzantısı (paralel konum)** kesikli çizgiyle gösterilir.
+- **Eklem paneli (sol):** OMUZ / DİRSEK / BİLEK değerleri; **−/+** dokun = 1°, basılı tut = sürekli (≈14°/s).
+  Sınıra dayanınca titreşim. Dirsek satırında ön kolun üst kola göre açısı da yazar ("üst kola ∠90°").
 - Sınıra gelen eklem kırpılır, yanlış uca "atlamaz".
 
 ![Dirsek sürükleme](img/ekran_dirsek_surukleme.png)
 
-*Ekran testi: ön kol sürüklendi → dirsek 50°→0°, omuz (100°) ve bilek (70°) değişmedi, el ön kolla birlikte döndü.*
+*Ekran testi: ön kol sürüklendi → yalnız dirsek değişti; omuz (100°) ve bilek (70°) aynı, el ön kolla birlikte döndü.
+Sarı yay dirseğin izinli aralığı, kesikli çizgi paralel konum.*
+
+| Kalibrasyon (hepsi 90°): ön kol üst kola dik, sağa | Dirsek 180°: ön kol üst kola paralel |
+|---|---|
+| ![90](img/ekran_kalibrasyon_90.png) | ![paralel](img/ekran_dirsek_paralel.png) |
 
 #### Üst çubuk
 
 | Düğme | İşlev |
 |---|---|
 | **Bağlan / Kes** | Eşleşmiş cihaz listesini açar; bağlıyken bağlantıyı keser |
-| Durum yazısı | "Bağlı değil" / "Bağlanıyor" / "HC-05 · Kol ● hazır" (yeşil) / "Kol ○ yanıt yok" (turuncu) |
+| Durum hapı | "Bağlı değil" / "Bağlanıyor" / "HC-05 · kol hazır" (yeşil) / "kol yanıt vermiyor" (turuncu) |
 | **Hız** | Yavaş 45 °/s → Normal 90 °/s → Hızlı 160 °/s (kalıcı) |
-| **Far** | LED'leri açar/kapatır (açıkken yazı turuncu) |
+| **Far** | LED'leri açar/kapatır (açıkken "Far ● açık", turuncu) |
 | **Duruşlar** | Referans duruşlar, kaydetme, silme, mevcut açıları görme (§10) |
 | **Ev** | Ev / park duruşu |
 | **Ayarlar** | Servo ve motor yönlerini ters çevirme |
@@ -404,15 +417,25 @@ Yandan görünüşte x = ileri, y = yukarı, omuz pivotu (0, 0). Segment boylar�
 
 ```
 φ1 (üst kol mutlak açısı) = omuz servo                 0 = ileri yatay, 90 = dik
-φ2 (ön kol mutlak açısı)  = φ1 + (dirsek servo − 90)   dirsek 90 = üst kolla düz devam
+φ2 (ön kol mutlak açısı)  = φ1 − MONTAJ + (dirsek servo − 90)
 φ3 (el mutlak açısı)      = φ2 + (bilek servo − 90)    bilek 90 = ön kolla düz devam
 ```
+
+**Dirsek montajı (v1.1):** Ön kol (dirsek–bilek), dirsek servosu ortadayken (90) üst kola **≈90°** açıyla ve
+**ileri/sağ** tarafa bakacak şekilde takılıdır: üst kol dik tutulduğunda ön kol sağa doğru çıkıntı yapar.
+`MONTAJ = ArmKinematics.ELBOW_MOUNT_DEG = 90` (şimdilik kabul; gerçek ölçülen değer gelince yalnız bu sabit değişir).
+
+| Dirsek servo | Ön kolun üst kola göre durumu |
+|---|---|
+| 180 | **Paralel** – düz uzanmış (kol dümdüz) |
+| 90 | **Dik (≈90°)**, sağa/ileri – mekanik standart konum |
+| 0 | Aşağı katlanmış (üst kolla çakışabilir; sahada alt sınır belirlenmeli) |
 
 **Sürükleme:** Kullanıcı bir segmenti istenen mutlak açıya getirdiğinde yalnız o eklemin servo açısı hesaplanır:
 
 ```
 servo = ofset + (istenen mutlak açı − ebeveynin mutlak açısı)
-ofset = 0 (omuz) | 90 (dirsek, bilek)
+ofset = 0 (omuz) | 90 + MONTAJ = 180 (dirsek) | 90 (bilek)
 ```
 
 Sonuç, eklem aralığının ortasına göre ±180° penceresine katlanır ve [min, max] aralığına kırpılır.
@@ -429,14 +452,14 @@ Servo açıları; sıra: Kök, Omuz (A1; A2 = 180 − A1), Dirsek, Bilek, Rotasy
 
 | Duruş | Kök | Omuz | Dirsek | Bilek | Rot. | Kıskaç | Amaç |
 |---|---|---|---|---|---|---|---|
-| Ev / Park | 90 | 100 | 50 | 70 | 90 | 60 | Açılış / sürüş sırasında güvenli |
+| Ev / Park | 90 | 100 | 90 | 70 | 90 | 60 | Açılış / sürüş sırasında güvenli |
 | Kalibrasyon (hepsi 90°) | 90 | 90 | 90 | 90 | 90 | 90 | Servo kollarını takmak için |
-| Öne uzan | 90 | 30 | 90 | 90 | 90 | 30 | Uzak erişim, kıskaç açık |
-| Yerden al | 90 | 45 | 20 | 50 | 90 | 30 | El yere doğru, kıskaç açık |
-| Kavra | 90 | 45 | 20 | 50 | 90 | 105 | Aynı konumda kıskaç kapalı |
-| Taşıma | 90 | 120 | 30 | 60 | 90 | 105 | Nesne gövdeye yakın, yukarıda |
-| Sola bak | 150 | 100 | 60 | 80 | 90 | 60 | Kök sola |
-| Sağa bak | 30 | 100 | 60 | 80 | 90 | 60 | Kök sağa |
+| Öne uzan | 90 | 30 | 180 | 90 | 90 | 30 | Uzak erişim, kıskaç açık |
+| Yerden al | 90 | 45 | 110 | 50 | 90 | 30 | El yere doğru, kıskaç açık |
+| Kavra | 90 | 45 | 110 | 50 | 90 | 105 | Aynı konumda kıskaç kapalı |
+| Taşıma | 90 | 120 | 120 | 60 | 90 | 105 | Nesne gövdeye yakın, yukarıda |
+| Sola bak | 150 | 100 | 150 | 80 | 90 | 60 | Kök sola |
+| Sağa bak | 30 | 100 | 150 | 80 | 90 | 60 | Kök sağa |
 
 Uygulamada **Duruşlar** penceresi:
 - Dokun → duruşu uygula (slave seçili hızda yumuşakça gider).
@@ -468,7 +491,7 @@ Uygulamada **Duruşlar** penceresi:
 
 ## 12. Testler ve doğrulama
 
-### Android birim testleri — 15 test, hepsi geçiyor
+### Android birim testleri — 16 test, hepsi geçiyor
 
 `cd android && ./gradlew testDebugUnitTest`
 
@@ -480,7 +503,8 @@ Uygulamada **Duruşlar** penceresi:
 | | `parsesTelemetryAcrossChunks` | Parça parça gelen veri, çerçeve öncesi çöp |
 | | `rejectsCorruptedFrame` | Bozuk çerçeve atılıyor, sayaç artıyor |
 | | `parsesHello` | `OK,ROVER,1` yanıtı |
-| `KinematicsTest` | `straightUpWhenAll90` | Hepsi 90° → kol dik |
+| `KinematicsTest` | `elbowMountedPerpendicularToTheRightAt90` | Hepsi 90° → üst kol dik, ön kol sağa ≈90° |
+| | `elbowCanReachParallelToUpperArm` | Dirsek 180 → ön kol üst kola paralel; sürüklemeyle de ulaşılıyor |
 | | `childFollowsParentRotation` | Omuz dönünce alt segmentlerin göreli açısı sabit |
 | | `draggingOnlyChangesThatJoint` | Ön kol sürükleme yalnız dirseği hesaplıyor |
 | | `shoulderWrapsToNearestLimit` | Sınırda yanlış uca atlama yok |
@@ -488,7 +512,7 @@ Uygulamada **Duruşlar** penceresi:
 | | `builtInPosesWithinLimits` | Hazır duruşlar eklem sınırları içinde |
 | | `reachingPosesStayAboveGroundLine` | Hazır duruşlarda uç zemine girmiyor (model üzerinde) |
 | | `userPoseEncoding` | Kayıtlı duruş saklama/okuma |
-| `ScreenshotTest` | `mainScreen` | Robolectric ile gerçek çizim: ana ekran PNG'si + ön kol sürüklenince **yalnız dirsek** değişiyor |
+| `ScreenshotTest` | `mainScreen` | Robolectric ile gerçek çizim: ana ekran PNG'si + ön kol sürüklenince **yalnız dirsek** değişiyor; paralel ve 90° kol görüntüleri |
 
 Ekran görüntüleri `docs/img/` altındadır.
 
@@ -510,8 +534,8 @@ Ekran görüntüleri `docs/img/` altındadır.
 ## 13. Derleme, kurulum ve yükleme
 
 ### Telefona kurulum
-1. `release/RobotKolRover-v1.0.apk` dosyasını telefona aktarın.
-   SHA-256: `d2055c81b12b78cf4f5fdba6fa8014b840935f4b99fca54fb8e65c732e6f913f`
+1. `release/RobotKolRover-v1.1.apk` dosyasını telefona aktarın.
+   SHA-256: `7e9ef810d908948f6cce4aec43259d6f1bc0e23ca8fe69c90f15a78e384fe7c9`
 2. "Bilinmeyen kaynaklardan yükleme" iznini verin, kurun.
 3. Bluetooth ayarlarından HC-05'i eşleştirin.
 4. Uygulama → **Bağlan** → HC-05.
@@ -579,7 +603,7 @@ Android Studio ile `android/` klasörünü açmak da yeterlidir.
 robotkol-kontrol/
 ├── README.md                          Hızlı başlangıç, arayüz özeti, duruşlar, derleme
 ├── release/
-│   └── RobotKolRover-v1.0.apk         Kurulabilir uygulama
+│   └── RobotKolRover-v1.1.apk         Kurulabilir uygulama
 ├── firmware/
 │   ├── rover_master/rover_master.ino  Master Uno
 │   └── rover_slave/rover_slave.ino    Slave Uno
@@ -619,11 +643,15 @@ robotkol-kontrol/
 9. Firmware ve APK derlendi; APK `release/` altına kondu (commit `62a9cfc`).
 10. Görsel bağlantı şeması (PNG + SVG) ve üretici betik eklendi (commit `79c4cd2`).
 11. Bu ayrıntılı özet belgesi eklendi.
+12. v1.1: arayüz modernleştirildi (kartlar, eklem paneli + ince ayar, sürüklemede aralık yayı); dirsek montajı
+    ≈90° sağa olarak modellendi (`ELBOW_MOUNT_DEG`), dirsek 180 = paralel; ev duruşu dirseği 50 → 90 (slave ile birlikte),
+    hazır duruşların dirsek değerleri aynı görünümü koruyacak şekilde +90 kaydırıldı.
 
 ### Sonraki adımlar
 
 - [ ] §14'teki saha testleri (güç, kalibrasyon, yön, sınırlar, duruşlar, sürüş, güvenlik, yük).
 - [ ] Sahada doğrulanan duruş açılarının `PoseLibrary.kt` ve firmware `JOINT_HOME`'a işlenmesi.
+- [ ] Dirsek montaj açısını ölç → `ArmKinematics.ELBOW_MOUNT_DEG`; dirseğin güvenli alt sınırını (katlanma/çarpışma) belirle.
 - [ ] Gerçek eklem sınırlarının iki tarafta (slave + `Joint.kt`) güncellenmesi.
 - [ ] İsteğe bağlı: gerçek segment boyları, pil gerilimi telemetrisi, far için transistör.
 - [ ] Repoyu public yapmak (GitHub → Settings → General → Danger Zone → Change visibility).

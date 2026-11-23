@@ -9,14 +9,25 @@ import kotlin.math.sqrt
  * Kolun yandan görünüşü için İLERİ kinematik.
  *
  * Her segment, kendinden önceki segmente göre döner:
- *   omuz mutlak açısı   φ1 = omuz servo           (0 = ileri yatay, 90 = dik)
- *   dirsek mutlak açısı φ2 = φ1 + (dirsek − 90)   (dirsek 90 = düz devam)
- *   bilek mutlak açısı  φ3 = φ2 + (bilek − 90)
+ *   omuz mutlak açısı   φ1 = omuz servo                              (0 = ileri yatay, 90 = dik)
+ *   dirsek mutlak açısı φ2 = φ1 − ELBOW_MOUNT_DEG + (dirsek − 90)
+ *   bilek mutlak açısı  φ3 = φ2 + (bilek − 90)                       (bilek 90 = düz devam)
+ *
+ * Dirsek montajı: ön kol (dirsek–bilek), dirsek servosu ortadayken (90) üst kola
+ * ELBOW_MOUNT_DEG (≈90°) açıyla, İLERİ/SAĞ tarafa bakacak şekilde takılıdır. Üst kol dik
+ * tutulduğunda ön kol sağa doğru çıkıntı yapar. Dirsek servosu 90 + ELBOW_MOUNT_DEG'e
+ * (≈180) gidince ön kol üst kola paralel (düz uzanmış) olur; 0'a doğru gidince aşağı katlanır.
  * Ters kinematik yoktur: bir eklemi sürüklemek yalnızca o eklemi değiştirir,
  * ondan sonraki segmentler ona yapışık olarak birlikte taşınır.
  * Koordinatlar: x ileri, y yukarı; omuz pivotu (0,0).
  */
 object ArmKinematics {
+    /**
+     * Dirsek servosu 90° iken ön kolun üst kola göre montaj açısı (derece, sağa/ileri doğru).
+     * Şimdilik ≈90 kabul edildi; gerçek ölçülen değer gelince yalnız burası değişir.
+     */
+    const val ELBOW_MOUNT_DEG = 90.0
+
     data class Lengths(val upper: Double = 1.0, val fore: Double = 0.9, val hand: Double = 0.45) {
         val reach get() = upper + fore + hand
     }
@@ -28,7 +39,7 @@ object ArmKinematics {
 
     fun absoluteAngles(shoulder: Int, elbow: Int, wrist: Int): DoubleArray {
         val a1 = shoulder.toDouble()
-        val a2 = a1 + (elbow - 90)
+        val a2 = a1 - ELBOW_MOUNT_DEG + (elbow - 90)
         val a3 = a2 + (wrist - 90)
         return doubleArrayOf(a1, a2, a3)
     }
@@ -54,8 +65,15 @@ object ArmKinematics {
         return when (seg) { Segment.UPPER -> 0.0; Segment.FORE -> abs[0]; Segment.HAND -> abs[1] }
     }
 
-    /** Servo açısı = ofset + göreli açı. Omuz için ofset 0, diğerleri için 90. */
-    private fun offset(seg: Segment) = if (seg == Segment.UPPER) 0.0 else 90.0
+    /** Servo açısı = ofset + göreli açı. Omuz 0, dirsek 90 + montaj açısı, bilek 90. */
+    private fun offset(seg: Segment) = when (seg) {
+        Segment.UPPER -> 0.0
+        Segment.FORE -> 90.0 + ELBOW_MOUNT_DEG
+        Segment.HAND -> 90.0
+    }
+
+    /** Ön kolun üst kola göre açısı (0 = paralel/düz uzanmış, 90 = dik, sağa doğru pozitif). */
+    fun elbowBendDeg(elbow: Int) = ELBOW_MOUNT_DEG - (elbow - 90)
 
     /**
      * Segmentin istenen mutlak açısından (derece) servo açısını hesaplar.

@@ -19,7 +19,7 @@ Ayrıntılı plan, pin tabloları, protokol ve tespit edilen donanım riskleri: 
 
 | Yol | İçerik |
 |---|---|
-| `release/RobotKolRover-v1.0.apk` | Telefona kurulacak hazır APK |
+| `release/RobotKolRover-v1.1.apk` | Telefona kurulacak hazır APK |
 | `firmware/rover_master/` | Master Uno (HC-05, L293D, I2C master) |
 | `firmware/rover_slave/` | Slave Uno (7 servo, I2C slave 0x08) |
 | `android/` | Android Studio / Gradle projesi |
@@ -36,7 +36,7 @@ Ayrıntılı plan, pin tabloları, protokol ve tespit edilen donanım riskleri: 
 3. Kabloları [docs/PLAN.md §3](docs/PLAN.md#3-bağlantı-tablosu) tablosuna göre bağlayın.
    Unutmayın: iki Uno'nun GND'si ortak, HC-05 RX hattında 1k/2k bölücü, servolar ayrı güçlü beslemede.
 4. Telefonda Bluetooth ayarlarından **HC-05**'i eşleştirin (PIN: 1234 veya 0000).
-5. `release/RobotKolRover-v1.0.apk` dosyasını telefona kurun ("bilinmeyen kaynaklar" izni gerekebilir),
+5. `release/RobotKolRover-v1.1.apk` dosyasını telefona kurun ("bilinmeyen kaynaklar" izni gerekebilir),
    uygulamada **Bağlan** → HC-05'i seçin. Üst çubukta "Kol ● hazır" görünmelidir.
 
 ## Arayüz
@@ -61,14 +61,15 @@ Sıra: Kök, Omuz (A1; A2 = 180 − A1), Dirsek, Bilek, Rotasyon, Kıskaç
 
 | Duruş | Açılar |
 |---|---|
-| Ev / Park | 90, 100, 50, 70, 90, 60 |
+| Ev / Park | 90, 100, 90, 70, 90, 60 |
 | Kalibrasyon (hepsi 90°) | 90, 90, 90, 90, 90, 90 |
-| Öne uzan | 90, 30, 90, 90, 90, 30 |
-| Yerden al | 90, 45, 20, 50, 90, 30 |
-| Kavra | 90, 45, 20, 50, 90, 105 |
-| Taşıma | 90, 120, 30, 60, 90, 105 |
-| Sola bak / Sağa bak | 150 / 30, 100, 60, 80, 90, 60 |
+| Öne uzan | 90, 30, 180, 90, 90, 30 |
+| Yerden al | 90, 45, 110, 50, 90, 30 |
+| Kavra | 90, 45, 110, 50, 90, 105 |
+| Taşıma | 90, 120, 120, 60, 90, 105 |
+| Sola bak / Sağa bak | 150 / 30, 100, 150, 80, 90, 60 |
 
+Dirsek: 90 = ön kol üst kola ≈90° (sağa), 180 = üst kola paralel.
 Bunlar sahada test edilip düzeltilecek başlangıç değerleridir.
 
 ## İlk çalıştırma ve kalibrasyon kontrol listesi

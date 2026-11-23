@@ -14,11 +14,25 @@ import org.junit.Test
 class KinematicsTest {
     private val eps = 1e-9
 
-    @Test fun straightUpWhenAll90() {
-        val pts = ArmKinematics.points(90, 90, 90)
-        val tip = pts.last()
-        assertEquals(0.0, tip.x, 1e-9)
-        assertEquals(ArmKinematics.Lengths().reach, tip.y, eps)
+    @Test fun elbowMountedPerpendicularToTheRightAt90() {
+        // Omuz dik, dirsek 90: ön kol üst kola ≈90°, sağa (ileri) doğru çıkıntı
+        val len = ArmKinematics.Lengths()
+        val pts = ArmKinematics.points(90, 90, 90, len)
+        assertEquals(0.0, pts[1].x, eps); assertEquals(len.upper, pts[1].y, eps)
+        assertEquals(len.fore + len.hand, pts[3].x, eps)   // sağa
+        assertEquals(len.upper, pts[3].y, eps)              // yatay
+        assertEquals(90.0, ArmKinematics.elbowBendDeg(90), eps)
+    }
+
+    @Test fun elbowCanReachParallelToUpperArm() {
+        // Dirsek 180: ön kol üst kola paralel → kol tamamen düz yukarı
+        val pts = ArmKinematics.points(90, Joint.ELBOW.servoMax, 90)
+        assertEquals(0.0, pts.last().x, 1e-9)
+        assertEquals(ArmKinematics.Lengths().reach, pts.last().y, eps)
+        assertEquals(0.0, ArmKinematics.elbowBendDeg(180), eps)
+        // sürükleyerek de paralele gelinebilmeli (sınıra kırpılmadan)
+        val parent = ArmKinematics.parentAbsolute(Segment.FORE, 100, 90, 90)
+        assertEquals(180, ArmKinematics.servoForAbsolute(Segment.FORE, 100.0, parent, 0, 180))
     }
 
     @Test fun childFollowsParentRotation() {
@@ -27,16 +41,19 @@ class KinematicsTest {
         val b = ArmKinematics.absoluteAngles(100, 40, 120)
         assertEquals(a[1] - a[0], b[1] - b[0], eps)
         assertEquals(a[2] - a[1], b[2] - b[1], eps)
-        assertEquals(40.0, b[1] - b[0] + 90, eps)
+        assertEquals(40.0, b[1] - b[0] + ArmKinematics.ELBOW_MOUNT_DEG + 90, eps)
     }
 
     @Test fun draggingOnlyChangesThatJoint() {
-        // Ön kolu mutlak 0°'ye (yatay ileri) getir: omuz 120 iken dirsek = 90 + (0 - 120) = -30 → 0'a kırpılır
+        // Ön kolu mutlak 0°'ye (yatay ileri) getir: omuz 120 iken dirsek = 180 + (0 - 120) = 60
         val parent = ArmKinematics.parentAbsolute(Segment.FORE, 120, 90, 90)
-        assertEquals(0, ArmKinematics.servoForAbsolute(Segment.FORE, 0.0, parent, 0, 180))
-        // omuz 60 iken aynı istek: 90 + (0 - 60) = 30
+        assertEquals(60, ArmKinematics.servoForAbsolute(Segment.FORE, 0.0, parent, 0, 180))
+        // omuz 60 iken aynı istek: 180 + (0 - 60) = 120
         val p2 = ArmKinematics.parentAbsolute(Segment.FORE, 60, 90, 90)
-        assertEquals(30, ArmKinematics.servoForAbsolute(Segment.FORE, 0.0, p2, 0, 180))
+        assertEquals(120, ArmKinematics.servoForAbsolute(Segment.FORE, 0.0, p2, 0, 180))
+        // ön kolu üst kolun 30° ötesine istemek: 180 + 30 = 210 → üst sınır 180'e (paralel) kırpılır
+        val p3 = ArmKinematics.parentAbsolute(Segment.FORE, 60, 90, 90)
+        assertEquals(180, ArmKinematics.servoForAbsolute(Segment.FORE, 90.0, p3, 0, 180))
     }
 
     @Test fun shoulderWrapsToNearestLimit() {

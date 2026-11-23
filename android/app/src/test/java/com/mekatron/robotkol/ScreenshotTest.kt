@@ -63,5 +63,12 @@ class ScreenshotTest {
         }
         assertNotEquals("ön kol sürüklenemedi", false, grabbed)
         snap(root, "main_after_drag")
+
+        // Dirsek üst sınırda: ön kol üst kola paralel (düz uzanmış)
+        arm.setPose(90, 180, 90)
+        snap(arm, "arm_elbow_parallel")
+        // Kalibrasyon: hepsi 90 → üst kol dik, ön kol sağa ≈90°
+        arm.setPose(90, 90, 90)
+        snap(arm, "arm_all_90")
     }
 }

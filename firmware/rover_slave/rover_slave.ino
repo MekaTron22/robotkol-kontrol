@@ -27,8 +27,9 @@ const uint8_t PIN_GRIP        = 12;
 // Eklem sınırları (derece). Mekanik çarpışmayı önlemek için sahada daraltın.
 const uint8_t JOINT_MIN[J_COUNT]  = {   0,  15,   0,   0,   0,  20 };
 const uint8_t JOINT_MAX[J_COUNT]  = { 180, 165, 180, 180, 180, 110 };
-// Ev (park) pozisyonu – uygulamadaki HOME ile aynı olmalı
-const uint8_t JOINT_HOME[J_COUNT] = {  90, 100,  50,  70,  90,  60 };
+// Ev (park) pozisyonu – uygulamadaki HOME ile aynı olmalı.
+// Dirsek 90 = ön kol üst kola ≈90° (sağa/ileri) – mekanik standart montaj; 180 = üst kola paralel.
+const uint8_t JOINT_HOME[J_COUNT] = {  90, 100,  90,  70,  90,  60 };
 
 // A2 servosunun A1'e göre mekanik montaj farkı (derece, + / -)
 const int8_t SHOULDER_A2_TRIM = 0;

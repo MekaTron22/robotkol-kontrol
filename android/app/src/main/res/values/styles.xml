@@ -1,22 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="AppTheme" parent="@android:style/Theme.Material.NoActionBar.Fullscreen">
-        <item name="android:windowBackground">@android:color/black</item>
+        <item name="android:windowBackground">@color/bg</item>
+        <item name="android:statusBarColor">@color/bg</item>
+        <item name="android:navigationBarColor">@color/bg</item>
         <item name="android:colorAccent">#FF8A2A</item>
         <item name="android:alertDialogTheme">@android:style/Theme.Material.Dialog.Alert</item>
     </style>
 
-    <style name="BarButton" parent="@android:style/Widget.Material.Button">
+    <style name="BarButton" parent="@android:style/Widget.Material.Button.Borderless">
         <item name="android:layout_width">wrap_content</item>
         <item name="android:layout_height">40dp</item>
-        <item name="android:layout_marginStart">4dp</item>
-        <item name="android:minWidth">56dp</item>
+        <item name="android:layout_marginStart">6dp</item>
+        <item name="android:minWidth">48dp</item>
         <item name="android:minHeight">0dp</item>
-        <item name="android:paddingStart">10dp</item>
-        <item name="android:paddingEnd">10dp</item>
+        <item name="android:paddingStart">14dp</item>
+        <item name="android:paddingEnd">14dp</item>
         <item name="android:textSize">13sp</item>
         <item name="android:textAllCaps">false</item>
-        <item name="android:textColor">#F2F2F2</item>
-        <item name="android:backgroundTint">#2A2A33</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textColor">#EEF1F6</item>
+        <item name="android:background">@drawable/bg_btn</item>
+        <item name="android:stateListAnimator">@null</item>
     </style>
 </resources>

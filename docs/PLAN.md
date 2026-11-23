@@ -142,7 +142,7 @@ Uygulama bağlanınca ilk telemetriyle kol çizimini gerçek poza eşitler.
 
 Açı ↔ çizim eşlemesi:
 - omuz mutlak açısı = servo açısı (90 = dik, 0 = ileri yatay)
-- dirsek göreli açısı = servo − 90 (90 = düz devam)
+- dirsek: servo 90 = ön kol üst kola ≈90° (sağa/ileri, mekanik montaj), 180 = üst kola paralel (düz)
 - bilek göreli açısı = servo − 90
 
 ## 6. Tespit edilen sorunlar / riskler
