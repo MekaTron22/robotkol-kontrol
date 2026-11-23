@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Robot Kol Rover</string>
+    <string name="connect">Bağlan</string>
+    <string name="disconnect">Kes</string>
+    <string name="light">Far</string>
+    <string name="poses">Duruşlar</string>
+    <string name="home">Ev</string>
+    <string name="settings">Ayarlar</string>
+    <string name="estop">ACİL DUR</string>
+</resources>

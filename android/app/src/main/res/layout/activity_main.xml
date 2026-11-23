@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="#0B0B0E"
+    android:orientation="vertical"
+    android:splitMotionEvents="true">
+
+    <!-- Üst çubuk -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="44dp"
+        android:background="#16161B"
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp">
+
+        <Button android:id="@+id/btnConnect" style="@style/BarButton" android:text="@string/connect" />
+
+        <TextView
+            android:id="@+id/txtStatus"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="8dp"
+            android:layout_weight="1"
+            android:ellipsize="end"
+            android:maxLines="1"
+            android:textColor="#9A9AA2"
+            android:textSize="13sp" />
+
+        <Button android:id="@+id/btnSpeed" style="@style/BarButton" />
+        <Button android:id="@+id/btnLight" style="@style/BarButton" android:text="@string/light" />
+        <Button android:id="@+id/btnPoses" style="@style/BarButton" android:text="@string/poses" />
+        <Button android:id="@+id/btnHome" style="@style/BarButton" android:text="@string/home" />
+        <Button android:id="@+id/btnSettings" style="@style/BarButton" android:text="@string/settings" />
+        <Button
+            android:id="@+id/btnStop"
+            style="@style/BarButton"
+            android:backgroundTint="#FF4B4B"
+            android:text="@string/estop"
+            android:textColor="#FFFFFF" />
+    </LinearLayout>
+
+    <!-- Ana alan: sol DC | merkez | sağ DC -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:splitMotionEvents="true">
+
+        <com.mekatron.robotkol.ui.DriveSliderView
+            android:id="@+id/driveLeft"
+            android:layout_width="96dp"
+            android:layout_height="match_parent" />
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:orientation="vertical"
+            android:splitMotionEvents="true">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="36"
+                android:orientation="horizontal"
+                android:splitMotionEvents="true">
+
+                <com.mekatron.robotkol.ui.RootWheelView
+                    android:id="@+id/rootWheel"
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="match_parent"
+                    android:layout_weight="1.3"
+                    android:orientation="vertical"
+                    android:splitMotionEvents="true">
+
+                    <com.mekatron.robotkol.ui.HSliderView
+                        android:id="@+id/gripSlider"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1" />
+
+                    <com.mekatron.robotkol.ui.HSliderView
+                        android:id="@+id/rollSlider"
+                        android:layout_width="match_parent"
+                        android:layout_height="0dp"
+                        android:layout_weight="1" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <com.mekatron.robotkol.ui.ArmView
+                android:id="@+id/armView"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="64" />
+        </LinearLayout>
+
+        <com.mekatron.robotkol.ui.DriveSliderView
+            android:id="@+id/driveRight"
+            android:layout_width="96dp"
+            android:layout_height="match_parent" />
+    </LinearLayout>
+</LinearLayout>
