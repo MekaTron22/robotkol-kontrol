@@ -21,8 +21,8 @@ class ProtocolTest {
     }
 
     @Test fun poseFrameOrderAndLimits() {
-        val p = Pose(intArrayOf(90, 5, 50, 70, 90, 200))   // omuz min 15, kıskaç max 110
-        assertTrue(Protocol.pose(p).startsWith("<J,90,15,50,70,90,110*"))
+        val p = Pose(intArrayOf(90, 5, 50, 70, 90, 200))   // omuz min 15, kıskaç max 65
+        assertTrue(Protocol.pose(p).startsWith("<J,90,15,50,70,90,65*"))
     }
 
     @Test fun parsesTelemetryAcrossChunks() {

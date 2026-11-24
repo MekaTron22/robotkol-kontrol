@@ -13,6 +13,9 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import org.robolectric.shadows.ShadowAlertDialog
+import org.robolectric.Shadows.shadowOf
+import android.os.Looper
 import java.io.File
 import java.io.FileOutputStream
 
@@ -70,5 +73,25 @@ class ScreenshotTest {
         // Kalibrasyon: hepsi 90 → üst kol dik, ön kol sağa ≈90°
         arm.setPose(90, 90, 90)
         snap(arm, "arm_all_90")
+    }
+
+    @Test fun limitsDialog() {
+        val act = Robolectric.buildActivity(MainActivity::class.java).setup().get()
+        act.findViewById<View>(R.id.btnSettings).performClick()
+        val menu = ShadowAlertDialog.getLatestAlertDialog()
+        menu.listView.performItemClick(null, 0, 0)          // "Eklem sınırları"
+        shadowOf(Looper.getMainLooper()).idle()
+        val dlg = ShadowAlertDialog.getLatestAlertDialog()
+        assertNotEquals("sınır penceresi açılmadı", menu, dlg)
+        val root = dlg.window!!.decorView
+        root.measure(View.MeasureSpec.makeMeasureSpec(1200, View.MeasureSpec.EXACTLY),
+            View.MeasureSpec.makeMeasureSpec(1400, View.MeasureSpec.AT_MOST))
+        root.layout(0, 0, root.measuredWidth, root.measuredHeight)
+        snap(root, "limits_dialog")
+        // Kaydet: varsayılan sınırlar (kıskaç 0..65) kalıcı olarak yazılır
+        dlg.getButton(android.app.AlertDialog.BUTTON_POSITIVE).performClick()
+        shadowOf(Looper.getMainLooper()).idle()
+        val saved = act.getSharedPreferences("rover", 0).getString("limits", null)
+        org.junit.Assert.assertTrue("kaydedilmedi: $saved", saved!!.endsWith("0-65"))
     }
 }

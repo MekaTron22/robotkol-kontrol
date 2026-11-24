@@ -24,6 +24,7 @@ import android.widget.Toast
 import com.mekatron.robotkol.bt.BluetoothLink
 import com.mekatron.robotkol.core.ArmKinematics.Segment
 import com.mekatron.robotkol.core.Joint
+import com.mekatron.robotkol.core.JointLimits
 import com.mekatron.robotkol.core.JointMapping
 import com.mekatron.robotkol.core.NamedPose
 import com.mekatron.robotkol.core.PoseLibrary
@@ -31,6 +32,7 @@ import com.mekatron.robotkol.core.Protocol
 import com.mekatron.robotkol.ui.ArmView
 import com.mekatron.robotkol.ui.DriveSliderView
 import com.mekatron.robotkol.ui.HSliderView
+import com.mekatron.robotkol.ui.LimitsDialog
 import com.mekatron.robotkol.ui.RootWheelView
 import com.mekatron.robotkol.ui.RoverTheme
 
@@ -85,6 +87,7 @@ class MainActivity : Activity(), BluetoothLink.Listener {
         private const val PREF_POSES = "poses"
         private const val PREF_LAST_DEVICE = "lastDevice"
         private const val PREF_SPEED = "speed"
+        private const val PREF_LIMITS = "limits"
     }
 
     // ------------------------------------------------------------------ yaşam döngüsü
@@ -133,7 +136,7 @@ class MainActivity : Activity(), BluetoothLink.Listener {
         btnLight.setOnClickListener { lightOn = !lightOn; send(Protocol.light(lightOn)); updateButtons() }
         findViewById<Button>(R.id.btnHome).setOnClickListener { applyServoPose(PoseLibrary.BUILT_IN[0].angles) }
         findViewById<Button>(R.id.btnPoses).setOnClickListener { showPoses() }
-        findViewById<Button>(R.id.btnSettings).setOnClickListener { showSettings() }
+        findViewById<Button>(R.id.btnSettings).setOnClickListener { showSettingsMenu() }
         findViewById<Button>(R.id.btnStop).setOnClickListener { emergencyStop() }
 
         refreshViewsFromPose()
@@ -397,12 +400,44 @@ class MainActivity : Activity(), BluetoothLink.Listener {
             .setNegativeButton("İptal", null).show()
     }
 
-    // ------------------------------------------------------------------ ayarlar (yön terslemesi)
+    // ------------------------------------------------------------------ ayarlar
+    private fun showSettingsMenu() {
+        AlertDialog.Builder(this)
+            .setTitle("Ayarlar")
+            .setItems(arrayOf("Eklem sınırları (çalışma aralıkları)", "Yön ayarları (servo / motor ters)")) { _, i ->
+                if (i == 0) showLimits() else showSettings()
+            }
+            .setNegativeButton("Kapat", null).show()
+    }
+
+    /** Eklem sınırları penceresi; canlı önizleme bağlıyken eklemi sınıra götürür. */
+    private fun showLimits() {
+        val servoBefore = currentServoAngles()
+        val connected = link.state == BluetoothLink.State.CONNECTED
+        LimitsDialog(this, mapping.limits, connected,
+            onPreview = { j, servo ->
+                // önizleme eski sınırlara takılmasın: doğrudan servo açısı (donanım sınırı Pose'da uygulanır)
+                uiPose[j.ordinal] = mapping.fromServo(j, servo)
+                poseDirty = true
+            },
+            onSave = { lim ->
+                prefs.edit().putString(PREF_LIMITS, lim.encode()).apply()
+                loadInversion()
+                // önizlemeyle oynanan eklemler önceki duruşa dönsün; yeni sınırlara kırpılır
+                applyServoPose(servoBefore)
+                toast("Eklem sınırları kaydedildi")
+            },
+            onCancel = { applyServoPose(servoBefore) },
+        ).show()
+    }
+
+    // ------------------------------------------------------------------ yön terslemesi
     private val invertLabels = Joint.values().map { "${it.label} servosu ters" } + listOf("Sol motor ters", "Sağ motor ters")
 
     private fun loadInversion() {
         val bits = prefs.getInt(PREF_INVERT, 0)
-        mapping = JointMapping(Joint.values().filter { bits and (1 shl it.ordinal) != 0 }.toSet())
+        mapping = JointMapping(Joint.values().filter { bits and (1 shl it.ordinal) != 0 }.toSet(),
+            JointLimits.decode(prefs.getString(PREF_LIMITS, null)))
         invertLeftMotor = bits and (1 shl Joint.COUNT) != 0
         invertRightMotor = bits and (1 shl (Joint.COUNT + 1)) != 0
     }

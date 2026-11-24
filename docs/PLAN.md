@@ -138,7 +138,8 @@ Uygulama bağlanınca ilk telemetriyle kol çizimini gerçek poza eşitler.
 - **Etkileşimli kol:** omuz, dirsek ve bilek segmentlerinden birine dokunup sürükleyin.
   Her segment **kendi ekleminin etrafında, bir önceki segmente göre** döner; sonraki segmentler ona yapışık taşınır
   (ileri kinematik – tüm kolu aynı anda hareket ettiren ters kinematik **yok**).
-- **Rotasyon sürgüsü:** bilek sağ/sol (Wrist B). **Kıskaç sürgüsü:** aç/kapa.
+- **Rotasyon sürgüsü:** bilek sağ/sol (Wrist B). **Kıskaç sürgüsü:** aç/kapa (servo 0..65: 0 = açık, 65 = kapalı).
+- **Ayarlar → Eklem sınırları:** her eklemin çalışma aralığı telefondan ayarlanır (donanım sınırlarının içinde).
 
 Açı ↔ çizim eşlemesi:
 - omuz mutlak açısı = servo açısı (90 = dik, 0 = ileri yatay)

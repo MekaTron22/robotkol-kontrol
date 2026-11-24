@@ -8,7 +8,8 @@ Kullanıcıyla Türkçe konuş. Tüm bağlam: `docs/PROJE_OZETI.md` (önce bunu 
 - Kol arayüzü İLERİ kinematik: her segment bir öncekine göre döner; ters kinematik istenmiyor.
 - Dirsek: üst kolun ucunda SAĞA küçük çıkıntı var, dirsek pivotu onun ucunda (`Lengths.elbowOffset`) → ön kol katlanınca üst kolun yanından geçer. Servo 90 = ön kol üst kola ≈90° sağa (`ELBOW_MOUNT_DEG`), 0 = aşağı katlanmış paralel, 180 = düz devam. Kullanıcı gerçek ölçüleri verebilir.
 - Protokol `<GÖVDE*CS>` (XOR sağlama). Değiştirirsen hem `core/Protocol.kt` hem master'ı güncelle.
-- Eklem sınırları/ev pozu iki yerde: slave `JOINT_MIN/MAX/HOME` ve `android/.../core/Joints.kt` – birlikte değiştir.
+- Eklem sınırları/ev pozu iki yerde: slave `JOINT_MIN/MAX/HOME` ve `android/.../core/Joints.kt` – birlikte değiştir. Bunlar MUTLAK (donanım) sınırlardır; kullanıcı içlerinde kendi aralığını uygulamadaki Ayarlar → Eklem sınırları (`JointLimits`, `ui/LimitsDialog.kt`, prefs `limits`) ile seçer.
+- Kıskaç donanım aralığı 0..65 (0 = açık, 65 = kapalı).
 - Referans duruşlar: `android/.../core/PoseLibrary.kt` (sahada doğrulanacak).
 
 ## Derleme / test
