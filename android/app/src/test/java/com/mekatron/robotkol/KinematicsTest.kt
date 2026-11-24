@@ -3,6 +3,7 @@ package com.mekatron.robotkol
 import com.mekatron.robotkol.core.ArmKinematics
 import com.mekatron.robotkol.core.ArmKinematics.Segment
 import com.mekatron.robotkol.core.Joint
+import com.mekatron.robotkol.core.JointLimits
 import com.mekatron.robotkol.core.JointMapping
 import com.mekatron.robotkol.core.NamedPose
 import com.mekatron.robotkol.core.PoseLibrary
@@ -81,12 +82,12 @@ class KinematicsTest {
 
     @Test fun inversionRoundTrip() {
         val m = JointMapping(setOf(Joint.GRIP, Joint.ROOT))
-        assertEquals(70, m.uiMin(Joint.GRIP))
-        assertEquals(160, m.uiMax(Joint.GRIP))
-        val ui = intArrayOf(30, 100, 50, 70, 90, 120)
+        assertEquals(115, m.uiMin(Joint.GRIP))   // 180 − 65
+        assertEquals(180, m.uiMax(Joint.GRIP))   // 180 − 0
+        val ui = intArrayOf(30, 100, 50, 70, 90, 150)
         val servo = m.toServoPose(ui)
         assertEquals(150, servo[Joint.ROOT])
-        assertEquals(60, servo[Joint.GRIP])
+        assertEquals(30, servo[Joint.GRIP])
         assertArrayEquals(ui, m.fromServoPose(servo))
     }
 
@@ -104,6 +105,37 @@ class KinematicsTest {
             val pts = ArmKinematics.points(p.angles[1], p.angles[2], p.angles[3])
             assertTrue("${p.name} uç çok aşağıda: ${pts.last()}", pts.all { it.y > -0.35 })
         }
+    }
+
+    @Test fun gripperWorksOnlyBetween0And65() {
+        assertEquals(0, Joint.GRIP.servoMin); assertEquals(65, Joint.GRIP.servoMax)
+        // eski kayıtlı duruşlardaki 105 gibi değerler 65'e kırpılır
+        assertEquals(65, com.mekatron.robotkol.core.Pose(intArrayOf(90, 100, 90, 70, 90, 105))[Joint.GRIP])
+        assertEquals(65, JointMapping().clampUi(Joint.GRIP, 110))
+    }
+
+    @Test fun userLimitsStayInsideHardwareAndRoundTrip() {
+        val lim = JointLimits.DEFAULT.with(Joint.GRIP, 5, 60).with(Joint.ELBOW, 20, 170)
+        assertEquals(lim, JointLimits.decode(lim.encode()))
+        // donanım sınırı dışı istekler kırpılır, ters sıra düzeltilir, en az 1° aralık kalır
+        val bad = JointLimits.DEFAULT.with(Joint.GRIP, -10, 200).with(Joint.SHOULDER, 120, 40).with(Joint.ROOT, 50, 50)
+        assertEquals(0, bad.min(Joint.GRIP)); assertEquals(65, bad.max(Joint.GRIP))
+        assertEquals(40, bad.min(Joint.SHOULDER)); assertEquals(120, bad.max(Joint.SHOULDER))
+        assertTrue(bad.max(Joint.ROOT) > bad.min(Joint.ROOT))
+        // bozuk kayıt → varsayılan
+        assertEquals(JointLimits.DEFAULT, JointLimits.decode("çöp"))
+        assertEquals(JointLimits.DEFAULT, JointLimits.decode(null))
+    }
+
+    @Test fun mappingUsesUserLimits() {
+        val lim = JointLimits.DEFAULT.with(Joint.GRIP, 10, 50)
+        val m = JointMapping(emptySet(), lim)
+        assertEquals(10, m.uiMin(Joint.GRIP)); assertEquals(50, m.uiMax(Joint.GRIP))
+        assertEquals(50, m.toServoPose(intArrayOf(90, 100, 90, 70, 90, 65))[Joint.GRIP])
+        // ters takılı kıskaçta aralık aynalanır
+        val inv = JointMapping(setOf(Joint.GRIP), lim)
+        assertEquals(130, inv.uiMin(Joint.GRIP)); assertEquals(170, inv.uiMax(Joint.GRIP))
+        assertEquals(10, inv.toServoPose(intArrayOf(90, 100, 90, 70, 90, 175))[Joint.GRIP])
     }
 
     @Test fun userPoseEncoding() {

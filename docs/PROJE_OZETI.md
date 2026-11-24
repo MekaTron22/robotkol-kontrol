@@ -42,7 +42,7 @@ Teslim edilenler:
 | Slave Arduino Uno firmware'i (7 servo) | Tamamlandı, derleniyor |
 | Plan, pin tabloları, protokol belgesi | `docs/PLAN.md` |
 | Görsel bağlantı şeması (PNG + SVG) ve üretici betik | `docs/`, `tools/` |
-| Birim testleri + ekran görüntüsü testi | 17 test, hepsi geçiyor |
+| Birim testleri + ekran görüntüsü testi | 21 test, hepsi geçiyor |
 
 Kullanıcı gereksinimleri (sohbetten):
 
@@ -189,9 +189,9 @@ Dosya: [`firmware/rover_slave/rover_slave.ino`](../firmware/rover_slave/rover_sl
 
 | Sabit | Değer | Anlamı |
 |---|---|---|
-| `JOINT_MIN` | 0, 15, 0, 0, 0, 20 | Eklem alt sınırları (kök, omuz, dirsek, bilek, rotasyon, kıskaç) |
-| `JOINT_MAX` | 180, 165, 180, 180, 180, 110 | Eklem üst sınırları |
-| `JOINT_HOME` | 90, 100, 50, 70, 90, 60 | Açılış / ev pozisyonu |
+| `JOINT_MIN` | 0, 15, 0, 0, 0, 0 | MUTLAK alt sınırlar (kök, omuz, dirsek, bilek, rotasyon, kıskaç) |
+| `JOINT_MAX` | 180, 165, 180, 180, 180, 65 | MUTLAK üst sınırlar – kıskaç yalnız 0..65 çalışır |
+| `JOINT_HOME` | 90, 100, 90, 70, 90, 30 | Açılış / ev pozisyonu |
 | `SHOULDER_A2_TRIM` | 0 | A2'nin A1'e göre montaj farkı (derece) |
 | `DEFAULT_SPEED` | 90 °/s | Açılış hızı |
 | `MIN_SPEED` / `MAX_SPEED` | 10 / 250 °/s | Hız sınırları |
@@ -258,7 +258,7 @@ Telemetri yalnız bağlantı canlıyken gönderilir.
 
 ## 8. Android uygulaması
 
-Kaynak: [`android/`](../android) · APK: [`release/RobotKolRover-v1.1.apk`](../release/RobotKolRover-v1.1.apk)
+Kaynak: [`android/`](../android) · APK: [`release/RobotKolRover-v1.2.apk`](../release/RobotKolRover-v1.2.apk)
 
 ### 8.1 Teknik özet
 
@@ -316,7 +316,7 @@ v1.1 ile arayüz modernleştirildi (aynı yerleşim mantığı, yeni görünüm)
 
 #### Kıskaç ve Sağ/Sol rotasyon (`HSliderView`)
 - Yatay sürgüler; bırakınca yerinde kalır; sağ üstte güncel açı.
-- Kıskaç: sol = açık, sağ = kapalı (aralık 20..110). Çift dokunma: orta.
+- Kıskaç: sol = açık (0), sağ = kapalı (65); aralık **0..65** (donanım sınırı). Çift dokunma: orta.
 - Rotasyon: sol/sağ, çift dokunma: 90°; dolgu ortadan (90°) başlar.
 - Kıskaç açıklığı ve rotasyon kol çiziminde de gösterilir (pençe açıklığı, bilekteki küçük ibre).
 
@@ -352,7 +352,7 @@ Sarı yay dirseğin izinli aralığı, kesikli çizgi paralel konum.*
 | **Far** | LED'leri açar/kapatır (açıkken "Far ● açık", turuncu) |
 | **Duruşlar** | Referans duruşlar, kaydetme, silme, mevcut açıları görme (§10) |
 | **Ev** | Ev / park duruşu |
-| **Ayarlar** | Servo ve motor yönlerini ters çevirme |
+| **Ayarlar** | Menü: **Eklem sınırları** (§8.7a) · **Yön ayarları** (servo/motor ters) |
 | **ACİL DUR** | Motorlar anında 0, kol olduğu yerde kilitlenir |
 
 ### 8.4 Bluetooth bağlantısı (`BluetoothLink`)
@@ -382,16 +382,33 @@ Sarı yay dirseğin izinli aralığı, kesikli çizgi paralel konum.*
 - Gelen **ilk geçerli telemetri** ile tüm kontroller (çark, sürgüler, kol çizimi) servoların **gerçek** açısına eşitlenir; böylece uygulama kolu bilmediği bir pozdan zıplatmaz. Kullanıcı o anda sürüklüyorsa eşitleme bekler.
 - ACİL DUR sonrası da bir sonraki telemetriyle yeniden eşitlenir.
 
+### 8.7a Eklem sınırları (`JointLimits`, `LimitsDialog`) – v1.2
+
+**Ayarlar → Eklem sınırları** penceresinde her eklemin **çalışma aralığı** (servo derecesi) telefondan ayarlanır.
+
+![Eklem sınırları](img/ekran_eklem_sinirlari.png)
+
+- Her eklem tek satır: `MIN − değer +` · aralık çubuğu · `− değer + MAKS` · ↺ (o eklemi varsayılana döndür).
+- −/+ dokun = 1°, basılı tut = sürekli; değere dokununca sayı yazılabilir.
+- Değerler **donanım (mutlak) sınırlarının** dışına çıkamaz (firmware `JOINT_MIN/MAX` = `Joint.servoMin/Max`);
+  min her zaman max'tan en az 1° küçük kalır. Kıskaç için donanım sınırı **0..65**.
+- **Canlı önizleme** (bağlıyken): bir sınırı değiştirdikçe o eklem robotta o açıya gider. Örn. kıskaç MAKS'ı
+  artırarak tam kapandığı noktayı bulup orada bırakın. İptal → kol pencere açılmadan önceki duruşuna döner.
+- **Kaydet:** sınırlar telefonda saklanır (`limits`), sürgüler/çark/kol hemen yeni aralığa geçer, mevcut duruş
+  yeni aralığa kırpılır. Hazır ve kayıtlı duruşlar da uygulanırken bu aralığa kırpılır.
+- **Tümü varsayılan:** bütün eklemleri donanım sınırlarına döndürür (pencere kapanmadan).
+- Sınırlar servo derecesidir; ters takılı servoda arayüz aralığı otomatik aynalanır.
+
 ### 8.7 Yön ayarları (`JointMapping`)
 
 - Her servo ve her motor için "ters" seçeneği (kalıcı saklanır).
-- Ters servo için arayüz açısı `u` → servoya `180 − u` gider; arayüz sınırları da aynalanır (ör. kıskaç 20..110 → 70..160).
+- Ters servo için arayüz açısı `u` → servoya `180 − u` gider; arayüz sınırları da aynalanır (ör. kıskaç 0..65 → 115..180).
 - Ayar değiştirilirken servolar **yerinde kalır**; yalnız arayüzün yönü değişir.
 
 ### 8.8 Yaşam döngüsü
 
 - Uygulama arka plana giderse (`onPause`) hemen `D,0,0` gönderilir ve sürgüler sıfırlanır.
-- Kalıcı ayarlar (`SharedPreferences "rover"`): `invert` (bit maskesi), `poses` (kayıtlı duruşlar), `lastDevice`, `speed`.
+- Kalıcı ayarlar (`SharedPreferences "rover"`): `invert` (bit maskesi), `limits` (eklem sınırları, "min-max,…"), `poses` (kayıtlı duruşlar), `lastDevice`, `speed`.
 
 ### 8.9 Kaynak dosyalar
 
@@ -455,14 +472,14 @@ Servo açıları; sıra: Kök, Omuz (A1; A2 = 180 − A1), Dirsek, Bilek, Rotasy
 
 | Duruş | Kök | Omuz | Dirsek | Bilek | Rot. | Kıskaç | Amaç |
 |---|---|---|---|---|---|---|---|
-| Ev / Park | 90 | 100 | 90 | 70 | 90 | 60 | Açılış / sürüş sırasında güvenli |
-| Kalibrasyon (hepsi 90°) | 90 | 90 | 90 | 90 | 90 | 90 | Servo kollarını takmak için |
-| Öne uzan | 90 | 30 | 180 | 90 | 90 | 30 | Uzak erişim, kıskaç açık |
-| Yerden al | 90 | 45 | 110 | 50 | 90 | 30 | El yere doğru, kıskaç açık |
-| Kavra | 90 | 45 | 110 | 50 | 90 | 105 | Aynı konumda kıskaç kapalı |
-| Taşıma | 90 | 120 | 120 | 60 | 90 | 105 | Nesne gövdeye yakın, yukarıda |
-| Sola bak | 150 | 100 | 150 | 80 | 90 | 60 | Kök sola |
-| Sağa bak | 30 | 100 | 150 | 80 | 90 | 60 | Kök sağa |
+| Ev / Park | 90 | 100 | 90 | 70 | 90 | 30 | Açılış / sürüş sırasında güvenli |
+| Kalibrasyon (90°, kıskaç orta) | 90 | 90 | 90 | 90 | 90 | 30 | Servo kollarını takmak için (kıskaç 0..65 ortası) |
+| Öne uzan | 90 | 30 | 180 | 90 | 90 | 5 | Uzak erişim, kıskaç açık |
+| Yerden al | 90 | 45 | 110 | 50 | 90 | 5 | El yere doğru, kıskaç açık |
+| Kavra | 90 | 45 | 110 | 50 | 90 | 60 | Aynı konumda kıskaç kapalı |
+| Taşıma | 90 | 120 | 120 | 60 | 90 | 60 | Nesne gövdeye yakın, yukarıda |
+| Sola bak | 150 | 100 | 150 | 80 | 90 | 30 | Kök sola |
+| Sağa bak | 30 | 100 | 150 | 80 | 90 | 30 | Kök sağa |
 
 Uygulamada **Duruşlar** penceresi:
 - Dokun → duruşu uygula (slave seçili hızda yumuşakça gider).
@@ -494,7 +511,7 @@ Uygulamada **Duruşlar** penceresi:
 
 ## 12. Testler ve doğrulama
 
-### Android birim testleri — 17 test, hepsi geçiyor
+### Android birim testleri — 21 test, hepsi geçiyor
 
 `cd android && ./gradlew testDebugUnitTest`
 
@@ -515,8 +532,12 @@ Uygulamada **Duruşlar** penceresi:
 | | `inversionRoundTrip` | Ters servo eşlemesi ve aynalanan sınırlar |
 | | `builtInPosesWithinLimits` | Hazır duruşlar eklem sınırları içinde |
 | | `reachingPosesStayAboveGroundLine` | Hazır duruşlarda uç zemine girmiyor (model üzerinde) |
+| | `gripperWorksOnlyBetween0And65` | Kıskaç donanım sınırı 0..65; eski 105 gibi değerler 65'e kırpılır |
+| | `userLimitsStayInsideHardwareAndRoundTrip` | Kullanıcı sınırları donanım içinde, saklama/okuma, bozuk kayıtta varsayılan |
+| | `mappingUsesUserLimits` | Arayüz aralığı kullanıcı sınırlarından; ters servoda aynalanır |
 | | `userPoseEncoding` | Kayıtlı duruş saklama/okuma |
-| `ScreenshotTest` | `mainScreen` | Robolectric ile gerçek çizim: ana ekran PNG'si + ön kol sürüklenince **yalnız dirsek** değişiyor; paralel ve 90° kol görüntüleri |
+| `ScreenshotTest` | `limitsDialog` | Ayarlar → Eklem sınırları açılıyor, ekran görüntüsü, Kaydet kalıcı yazıyor |
+| | `mainScreen` | Robolectric ile gerçek çizim: ana ekran PNG'si + ön kol sürüklenince **yalnız dirsek** değişiyor; paralel ve 90° kol görüntüleri |
 
 Ekran görüntüleri `docs/img/` altındadır.
 
@@ -538,8 +559,8 @@ Ekran görüntüleri `docs/img/` altındadır.
 ## 13. Derleme, kurulum ve yükleme
 
 ### Telefona kurulum
-1. `release/RobotKolRover-v1.1.apk` dosyasını telefona aktarın.
-   SHA-256: `7866082fa99078067dbe48d66c85907414e884b4ad62f962621e7242715ec450`
+1. `release/RobotKolRover-v1.2.apk` dosyasını telefona aktarın.
+   SHA-256: `c621ca7182e9072eb5a532a00e8e5752c1e427061499d04681813b31835995f7`
 2. "Bilinmeyen kaynaklardan yükleme" iznini verin, kurun.
 3. Bluetooth ayarlarından HC-05'i eşleştirin.
 4. Uygulama → **Bağlan** → HC-05.
@@ -572,10 +593,10 @@ Android Studio ile `android/` klasörünü açmak da yeterlidir.
 Önerilen sıra (bir sonraki aşamada birlikte yapılacak testler):
 
 1. **Güç testi (kol takılı değil):** Slave'e güç verin; servolar 250 ms arayla tek tek ev açısına gitmeli, Uno resetlenmemeli.
-2. **Servo kollarını takma:** Uygulamada **Kalibrasyon (hepsi 90°)** → servo kollarını bu konumda takın.
+2. **Servo kollarını takma:** Uygulamada **Kalibrasyon (90°, kıskaç orta)** → servo kollarını bu konumda takın (kıskaç 30°).
 3. **Omuz ayna testi:** Omuzu yavaş hızda 60↔120 arasında oynatın. A1/A2 zorlanıyor, ısınıyor ya da vınlıyorsa `SHOULDER_A2_TRIM`'i ±1–5° ayarlayın.
 4. **Yön testi:** Her kontrolü küçük adımlarla oynatın; ters giden eklemi **Ayarlar**'dan ters işaretleyin.
-5. **Sınır testi:** Her eklemi uçlara götürün; mekanik çarpışma varsa `JOINT_MIN/MAX` (slave) ve `Joint.kt` (uygulama) değerlerini daraltın.
+5. **Sınır testi:** **Ayarlar → Eklem sınırları**, *Canlı* açık: her eklemin MIN/MAKS değerini −/+ ile mekanik uca kadar götürün, çarpışma/zorlanmadan hemen önce bırakıp **Kaydet**. Donanım sınırının kendisi yanlışsa `JOINT_MIN/MAX` (slave) ve `Joint.kt` birlikte değişir.
 6. **Duruş testi:** Her referans duruşu uygulayın; düzeltin, **Şu anki açılar** ile değerleri not alın, **Mevcut duruşu kaydet** ile saklayın. Doğrulanan değerler sonraki sürümde `PoseLibrary.kt`'ye işlenecek.
 7. **Sürüş testi:** Tekerlekler havadayken iki sürgüyü deneyin; yön yanlışsa Ayarlar → motor ters. Sonra yerde düşük hızla.
 8. **Güvenlik testi:** Sürerken Bluetooth'u kapatın → rover 0.6 s içinde durmalı. ACİL DUR → motor durmalı, kol kilitlenmeli.
@@ -607,7 +628,7 @@ Android Studio ile `android/` klasörünü açmak da yeterlidir.
 robotkol-kontrol/
 ├── README.md                          Hızlı başlangıç, arayüz özeti, duruşlar, derleme
 ├── release/
-│   └── RobotKolRover-v1.1.apk         Kurulabilir uygulama
+│   └── RobotKolRover-v1.2.apk         Kurulabilir uygulama
 ├── firmware/
 │   ├── rover_master/rover_master.ino  Master Uno
 │   └── rover_slave/rover_slave.ino    Slave Uno
@@ -650,12 +671,14 @@ robotkol-kontrol/
 12. v1.1: arayüz modernleştirildi (kartlar, eklem paneli + ince ayar, sürüklemede aralık yayı); dirsek montajı
     ≈90° sağa olarak modellendi (`ELBOW_MOUNT_DEG`), dirsek noktasına sağa çıkıntı eklendi (dirsek 0 = katlanmış paralel, çarpışmasız); ev duruşu dirseği 50 → 90 (slave ile birlikte),
     hazır duruşların dirsek değerleri aynı görünümü koruyacak şekilde +90 kaydırıldı.
+13. v1.2: kıskaç donanım aralığı 0..65 (slave + uygulama; ev 30, açık ≈5, kapalı ≈60);
+    **Ayarlar → Eklem sınırları** ekranı (her eklem için min/maks, canlı önizleme, telefonda kalıcı).
 
 ### Sonraki adımlar
 
 - [ ] §14'teki saha testleri (güç, kalibrasyon, yön, sınırlar, duruşlar, sürüş, güvenlik, yük).
 - [ ] Sahada doğrulanan duruş açılarının `PoseLibrary.kt` ve firmware `JOINT_HOME`'a işlenmesi.
 - [ ] Dirsek montaj açısını (`ArmKinematics.ELBOW_MOUNT_DEG`) ve çıkıntı boyunu (`Lengths.elbowOffset`) gerçek koldan ölç.
-- [ ] Gerçek eklem sınırlarının iki tarafta (slave + `Joint.kt`) güncellenmesi.
+- [ ] Sahada bulunan eklem sınırlarını Eklem sınırları ekranından kaydet; gerekirse donanım sınırlarını (slave + `Joint.kt`) daralt.
 - [ ] İsteğe bağlı: gerçek segment boyları, pil gerilimi telemetrisi, far için transistör.
 - [ ] Repoyu public yapmak (GitHub → Settings → General → Danger Zone → Change visibility).
